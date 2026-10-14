@@ -71,3 +71,22 @@ class UpdateUserRequest(BaseModel):
 class ChangePasswordRequest(BaseModel):
     current_password: str
     new_password: str = Field(min_length=8, max_length=128)
+
+
+# --- Búsqueda global ---------------------------------------------------------
+
+
+class ResultadoBusquedaOut(BaseModel):
+    """Una coincidencia. Sin URL: la ruta la decide el frontend según `tipo`."""
+
+    tipo: str
+    id: str
+    titulo: str
+    subtitulo: str | None = None
+    codigo: str | None = None
+
+
+class BusquedaOut(BaseModel):
+    consulta: str
+    tipos: list[str]
+    resultados: dict[str, list[ResultadoBusquedaOut]]

@@ -39,3 +39,45 @@ export const DEPARTAMENTO_DESCRIPCION: Record<Departamento, string> = {
   tecnologia: 'Mesa de ayuda e incidencias',
   rrhh: 'Administración y control de acceso',
 }
+
+/** Etiquetas e iconos de las categorías de la búsqueda global. */
+export const TIPO_BUSQUEDA: Record<string, { label: string; icon: string }> = {
+  proyecto: { label: 'Proyectos', icon: 'folder_open' },
+  cliente: { label: 'Clientes', icon: 'badge' },
+  incidencia: { label: 'Incidencias', icon: 'support_agent' },
+  usuario: { label: 'Usuarios', icon: 'person' },
+}
+
+/**
+ * Adónde navega un resultado de búsqueda, según el módulo del usuario.
+ *
+ * El backend devuelve solo `tipo` + `id`: elegir la ruta es presentación, no
+ * negocio. Para `cliente` y `usuario` no existe página de detalle, así que se
+ * abre el listado del módulo.
+ */
+const RUTA_POR_TIPO: Record<string, Partial<Record<Departamento, string>>> = {
+  proyecto: {
+    ventas: '/ventas/proyectos',
+    desarrollo: '/desarrollo/proyectos',
+    despacho: '/despacho/proyectos',
+    // RRHH lee todos los departamentos; la ficha de Ventas es la más completa.
+    rrhh: '/ventas/proyectos',
+  },
+  incidencia: {
+    tecnologia: '/tecnologia/incidencias',
+    rrhh: '/tecnologia/incidencias',
+  },
+  cliente: { ventas: '/ventas/clientes', rrhh: '/ventas/clientes' },
+  usuario: { rrhh: '/rrhh/usuarios' },
+}
+
+export function rutaResultado(
+  tipo: string,
+  id: string,
+  departamento: Departamento,
+): string | null {
+  const base = RUTA_POR_TIPO[tipo]?.[departamento]
+  if (!base) return null
+  const conDetalle = base.endsWith('/proyectos') || base.endsWith('/incidencias')
+  return conDetalle ? `${base}/${id}` : base
+}

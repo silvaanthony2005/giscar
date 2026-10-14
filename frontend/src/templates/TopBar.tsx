@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import type { User } from '../entities/auth/types'
 import { Icon } from '../atoms/Icon'
 import { Tooltip } from '../atoms/Tooltip'
+import { Buscador } from '../molecules/Buscador'
 import { DEPARTAMENTOS } from '../shared/lib/format'
 
 interface Props {
@@ -42,6 +43,8 @@ export function TopBar({ user, onMenuClick, onLogout }: Props) {
             </span>
           </button>
         </div>
+
+        {user && <Buscador departamento={user.departamento} />}
 
         <div className="flex shrink-0 items-center gap-space-md">
           {user && (

@@ -12,6 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from app.config import get_settings
 from app.infrastructure.api.routes import (
     auth,
+    buscar,
     desarrollo,
     despacho,
     health,
@@ -39,6 +40,7 @@ def create_app() -> FastAPI:
     app.include_router(health.router)
     app.include_router(auth.router)
     app.include_router(panel.router)
+    app.include_router(buscar.router)
     app.include_router(ventas.router)
     app.include_router(desarrollo.router)
     app.include_router(despacho.router)
