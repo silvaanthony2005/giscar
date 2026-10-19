@@ -12,6 +12,9 @@ from app.domain.shared.money import Money
 from app.domain.shared.state_machine import StateMachine
 from app.domain.shared.types import DomainError, Err, Ok, Result
 
+# Estados de Ventas en los que el proyecto ya salió del departamento.
+_SALIO_VENTAS = frozenset({"enviado_desarrollo", "cerrado"})
+
 
 def create_project(
     *,
@@ -128,7 +131,11 @@ def puede_pasar_a_despacho(project: Project) -> Result[Project, DomainError]:
 
 
 def puede_entregar(project: Project, pagado: Money, saldo: Money) -> Result[Project, DomainError]:
-    """Entrega solo con saldo en cero (se liquidó el resto del proyecto)."""
+    """Entrega solo con saldo en cero (se liquidó el resto del proyecto).
+
+    Al entregar, la venta también queda cerrada en Ventas: no hay nada más
+    que cobrar ni gestionar desde ese departamento.
+    """
     if saldo.cents > 0:
         return Err(
             DomainError(
@@ -136,7 +143,12 @@ def puede_entregar(project: Project, pagado: Money, saldo: Money) -> Result[Proj
                 f"Queda un saldo de {saldo.amount} pendiente antes de entregar",
             )
         )
-    return set_estado_despacho(project, "entregado", now=project.updated_at)
+    entregado = set_estado_despacho(project, "entregado", now=project.updated_at)
+    if not entregado.is_ok():
+        return entregado
+    if entregado.unwrap().estado_ventas != "enviado_desarrollo":
+        return entregado
+    return set_estado_ventas(entregado.unwrap(), "cerrado", now=entregado.unwrap().updated_at)
 
 
 # --- Acciones disponibles (las calcula el backend; el frontend solo las pinta) ---
@@ -152,7 +164,7 @@ _ACCIONES_DESARROLLO: dict[str, str] = {
 
 def acciones_ventas(project: Project, pagado: Money) -> tuple[str, ...]:
     """Acciones que Ventas puede ejecutar ahora mismo sobre el proyecto."""
-    if project.estado_ventas == "enviado_desarrollo":
+    if project.estado_ventas in _SALIO_VENTAS:
         return ()
     saldo = saldo_restante(project.monto_total, pagado)
     pago = ("registrar_pago",) if saldo.cents > 0 else ()
@@ -166,7 +178,7 @@ def acciones_desarrollo(project: Project, *, fases_pendientes: bool = False) -> 
     `fases_pendientes` refleja la regla de negocio: el proyecto solo se marca
     como completado cuando todas sus fases están completadas.
     """
-    if project.estado_ventas != "enviado_desarrollo":
+    if project.estado_ventas not in _SALIO_VENTAS:
         return ()
     acciones = tuple(
         _ACCIONES_DESARROLLO[target]
@@ -217,7 +229,7 @@ def grupo_desarrollo(project: Project) -> str:
 
 def agrupar_desarrollo(projects: Iterable[Project]) -> dict[str, tuple[Project, ...]]:
     """Agrupa los proyectos que ya llegaron a Desarrollo en sus tres columnas."""
-    llegados = tuple(filter(lambda p: p.estado_ventas == "enviado_desarrollo", projects))
+    llegados = tuple(filter(lambda p: p.estado_ventas in _SALIO_VENTAS, projects))
     return {
         grupo: tuple(filter(lambda p: grupo_desarrollo(p) == grupo, llegados))
         for grupo in GRUPOS_DESARROLLO
@@ -243,7 +255,7 @@ def agrupar_despacho(projects: Iterable[Project]) -> dict[str, tuple[Project, ..
 
 def pendientes_ventas(projects: Iterable[Project]) -> int:
     """Proyectos que Ventas aún gestiona (no se han enviado a Desarrollo)."""
-    return len(tuple(filter(lambda p: p.estado_ventas != "enviado_desarrollo", projects)))
+    return len(tuple(filter(lambda p: p.estado_ventas not in _SALIO_VENTAS, projects)))
 
 
 def activos_desarrollo(projects: Iterable[Project]) -> int:
@@ -251,7 +263,7 @@ def activos_desarrollo(projects: Iterable[Project]) -> int:
     return len(
         tuple(
             filter(
-                lambda p: p.estado_ventas == "enviado_desarrollo"
+                lambda p: p.estado_ventas in _SALIO_VENTAS
                 and grupo_desarrollo(p) in ("recibidos", "en_curso"),
                 projects,
             )

@@ -69,7 +69,9 @@ function useRefresh(pid?: string) {
   return () => {
     qc.invalidateQueries({ queryKey: [Q, 'proyectos'] })
     if (pid) qc.invalidateQueries({ queryKey: [Q, 'proyecto', pid] })
-    qc.invalidateQueries({ queryKey: ['ventas', 'proyectos'] })
+    // Ventas y el panel leen el mismo proyecto: hay que refrescarlos también
+    qc.invalidateQueries({ queryKey: ['ventas'] })
+    qc.invalidateQueries({ queryKey: ['panel', 'contadores'] })
   }
 }
 

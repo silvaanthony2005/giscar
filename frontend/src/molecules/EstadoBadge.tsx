@@ -10,17 +10,19 @@ const ESTADOS: Record<string, { label: string; tone: Tone }> = {
   cobrado_50: { label: 'Cobrado 50%', tone: 'warning' },
   cobrado_100: { label: 'Cobrado 100%', tone: 'success' },
   enviado_desarrollo: { label: 'En desarrollo', tone: 'info' },
+  cerrado: { label: 'Cobro completo', tone: 'success' },
   // Desarrollo
   pendiente: { label: 'Pendiente', tone: 'neutral' },
   en_planificacion: { label: 'Planificación', tone: 'info' },
   en_desarrollo: { label: 'En desarrollo', tone: 'info' },
   completado: { label: 'Completado', tone: 'success' },
   cancelado: { label: 'Cancelado', tone: 'danger' },
-  enviado_despacho: { label: 'Listo para despacho', tone: 'warning' },
+  enviado_despacho: { label: 'En Despacho', tone: 'success' },
   // Despacho
   pendiente_entrega: { label: 'Pendiente de entrega', tone: 'warning' },
   entregado: { label: 'Entregado', tone: 'success' },
   negado: { label: 'Negado', tone: 'danger' },
+  saldo_pendiente: { label: 'Saldo pendiente', tone: 'warning' },
   // Fases
   en_curso: { label: 'En curso', tone: 'info' },
   // Incidencias

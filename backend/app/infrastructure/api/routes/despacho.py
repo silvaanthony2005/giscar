@@ -131,11 +131,12 @@ def _register_remaining_payment(db, pid: str, user: User, metodo_pago: str, nota
     if not result.is_ok():
         raise HTTPException(422, result.error.message)
 
-    # Proyecto pasa a cobrado_100 en ventas
-    if project.estado_ventas != "cobrado_100":
-        tr = project_service.set_estado_ventas(project, "cobrado_100", now=_now())
-        if tr.is_ok():
-            ProjectRepository(db).update(tr.unwrap())
+    # La venta se cierra en Ventas: Despacho liquidó el saldo restante
+    if project.estado_ventas != "cerrado":
+        tr = project_service.set_estado_ventas(project, "cerrado", now=_now())
+        if not tr.is_ok():
+            raise HTTPException(422, tr.error.message)
+        ProjectRepository(db).update(tr.unwrap())
 
     saved = PaymentRepository(db).add(result.unwrap())
     db.commit()

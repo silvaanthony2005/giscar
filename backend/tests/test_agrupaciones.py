@@ -126,6 +126,18 @@ def test_ventas_cuenta_lo_que_aun_no_se_envio():
     assert project_service.pendientes_ventas([enviado, en_venta]) == 1
 
 
+def test_ventas_no_cuenta_la_venta_liquidada_en_despacho():
+    cerrado = _estado(_project(id="a"), ventas="cerrado")
+    en_venta = _estado(_project(id="b"), ventas="cobrado_50")
+    assert project_service.pendientes_ventas([cerrado, en_venta]) == 1
+
+
+def test_venta_cerrada_sigue_visible_en_el_historial_de_desarrollo():
+    liquidado = _estado(_project(id="a"), ventas="cerrado", desarrollo="enviado_despacho")
+    grupos = project_service.agrupar_desarrollo([liquidado])
+    assert [x.id for x in grupos["historial"]] == ["a"]
+
+
 def test_desarrollo_cuenta_recibidos_y_en_curso_pero_no_historial():
     recibido = _estado(_project(id="a"), ventas="enviado_desarrollo", desarrollo="pendiente")
     en_curso = _estado(_project(id="b"), ventas="enviado_desarrollo", desarrollo="en_desarrollo")

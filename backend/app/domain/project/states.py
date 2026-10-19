@@ -16,6 +16,7 @@ class EstadoVentas(StrEnum):
     COBRADO_50 = "cobrado_50"
     COBRADO_100 = "cobrado_100"
     ENVIADO_DESARROLLO = "enviado_desarrollo"
+    CERRADO = "cerrado"
 
 
 class EstadoDesarrollo(StrEnum):
@@ -39,8 +40,11 @@ VENTAS_SM = StateMachine(
     transitions=(
         Transition(EstadoVentas.LEVANTAMIENTO.value, EstadoVentas.COBRADO_50.value, "cobrar_50"),
         Transition(EstadoVentas.LEVANTAMIENTO.value, EstadoVentas.COBRADO_100.value, "cobrar_100"),
+        Transition(EstadoVentas.COBRADO_50.value, EstadoVentas.COBRADO_100.value, "cobrar_100"),
         Transition(EstadoVentas.COBRADO_50.value, EstadoVentas.ENVIADO_DESARROLLO.value, "pasar_desarrollo"),
         Transition(EstadoVentas.COBRADO_100.value, EstadoVentas.ENVIADO_DESARROLLO.value, "pasar_desarrollo"),
+        # Venta cerrada: Despacho liquidó el saldo restante del proyecto.
+        Transition(EstadoVentas.ENVIADO_DESARROLLO.value, EstadoVentas.CERRADO.value, "liquidar"),
     ),
 )
 

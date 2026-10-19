@@ -114,6 +114,46 @@ def test_estados_inmutables():
     assert p.estado_ventas == "levantamiento"  # original intacta
 
 
+def test_liquidar_en_despacho_cierra_la_venta():
+    """Despacho liquida el saldo -> Ventas deja de mostrarse 'En desarrollo'."""
+    p = _project()
+    cobrado = project_service.set_estado_ventas(p, "cobrado_50", now=NOW).unwrap()  # type: ignore[union-attr]
+    enviado = project_service.puede_pasar_a_desarrollo(
+        cobrado, Money.from_amount(50000)
+    ).unwrap()  # type: ignore[union-attr]
+    cerrado = project_service.set_estado_ventas(enviado, "cerrado", now=NOW)
+    assert cerrado.is_ok() and cerrado.unwrap().estado_ventas == "cerrado"  # type: ignore[union-attr]
+    # ya no hay acciones de Ventas sobre una venta cerrada
+    assert project_service.acciones_ventas(cerrado.unwrap(), Money(0)) == ()  # type: ignore[union-attr]
+
+
+def test_cerrar_venta_solo_desde_desarrollo():
+    p = _project()
+    assert not project_service.set_estado_ventas(p, "cerrado", now=NOW).is_ok()
+
+
+def test_completar_el_cobro_en_ventas_pasa_a_100():
+    """Cobrar el resto en Ventas (50% -> 100%) debe avanzar el estado, no fallar."""
+    p = _project()
+    cobrado = project_service.set_estado_ventas(p, "cobrado_50", now=NOW).unwrap()  # type: ignore[union-attr]
+    cien = project_service.set_estado_ventas(cobrado, "cobrado_100", now=NOW)
+    assert cien.is_ok() and cien.unwrap().estado_ventas == "cobrado_100"  # type: ignore[union-attr]
+
+
+def test_entregar_con_saldo_cero_cierra_la_venta():
+    """Entregado y sin saldo = venta cerrada; Ventas no queda en 'En desarrollo'."""
+    p = _project()
+    cobrado = project_service.set_estado_ventas(p, "cobrado_50", now=NOW).unwrap()  # type: ignore[union-attr]
+    enviado = project_service.puede_pasar_a_desarrollo(
+        cobrado, Money.from_amount(50000)
+    ).unwrap()  # type: ignore[union-attr]
+    en_despacho = project_service.set_estado_despacho(enviado, "pendiente_entrega", now=NOW).unwrap()  # type: ignore[union-attr]
+    r = project_service.puede_entregar(en_despacho, Money.from_amount(100000), Money(0))
+    assert r.is_ok()
+    assert r.unwrap().estado_despacho == "entregado"  # type: ignore[union-attr]
+    assert r.unwrap().estado_ventas == "cerrado"  # type: ignore[union-attr]
+
+
 # --- pagos ---
 
 
