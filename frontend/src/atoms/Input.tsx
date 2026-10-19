@@ -45,7 +45,7 @@ export function Input({
           id={inputId}
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy}
-          className={`h-10 w-full rounded-lg bg-surface-container-low text-body-md text-on-surface shadow-hairline transition-all duration-150 placeholder:text-outline focus:bg-surface-container-lowest focus:outline-none focus:ring-2 focus:ring-secondary/20 ${
+          className={`h-10 w-full rounded-lg bg-surface-container-low text-body-md text-on-surface shadow-hairline transition-all duration-150 placeholder:text-outline focus:bg-surface-container-lowest focus:outline-none focus:ring-2 focus:ring-secondary ${
             icon ? 'pl-11' : 'pl-3.5'
           } ${trailing ? 'pr-11' : 'pr-3.5'} ${
             error ? 'ring-2 ring-error/40 focus:ring-error/60' : ''
@@ -57,7 +57,7 @@ export function Input({
         )}
       </div>
       {error ? (
-        <p id={`${inputId}-error`} className="text-label-sm text-on-error-container">
+        <p id={`${inputId}-error`} role="alert" className="text-label-sm text-on-error-container">
           {error}
         </p>
       ) : (

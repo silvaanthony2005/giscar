@@ -37,7 +37,7 @@ export function Select({
           id={selectId}
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy}
-          className={`h-10 w-full appearance-none rounded-lg bg-surface-container-low pr-10 pl-3.5 text-body-md text-on-surface shadow-hairline transition-all duration-150 focus:bg-surface-container-lowest focus:outline-none focus:ring-2 focus:ring-secondary/20 ${
+          className={`h-10 w-full appearance-none rounded-lg bg-surface-container-low pr-10 pl-3.5 text-body-md text-on-surface shadow-hairline transition-all duration-150 focus:bg-surface-container-lowest focus:outline-none focus:ring-2 focus:ring-secondary ${
             error ? 'ring-2 ring-error/40 focus:ring-error/60' : ''
           } ${className}`}
           {...rest}

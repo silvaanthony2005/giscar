@@ -10,7 +10,7 @@ interface Props extends HTMLAttributes<HTMLDivElement> {
 export function Card({ header, footer, className = '', children, ...rest }: Props) {
   return (
     <section
-      className={`rounded-lg border border-outline-variant/60 bg-surface-container-lowest shadow-hairline ${className}`}
+      className={`rounded-xl border border-outline-variant/60 bg-surface-container-lowest shadow-raised ${className}`}
       {...rest}
     >
       {header && (

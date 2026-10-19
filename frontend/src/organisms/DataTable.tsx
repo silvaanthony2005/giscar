@@ -48,8 +48,21 @@ export function DataTable<T>({
               <tr
                 key={keyOf(row)}
                 onClick={onRowClick ? () => onRowClick(row) : undefined}
+                onKeyDown={
+                  onRowClick
+                    ? (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          onRowClick(row)
+                        }
+                      }
+                    : undefined
+                }
+                tabIndex={onRowClick ? 0 : undefined}
                 className={`border-b border-outline-variant/40 last:border-b-0 transition-colors ${
-                  onRowClick ? 'cursor-pointer hover:bg-surface-container-low' : ''
+                  onRowClick
+                    ? 'cursor-pointer hover:bg-surface-container-low focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-secondary'
+                    : ''
                 }`}
               >
                 {columns.map((c) => (

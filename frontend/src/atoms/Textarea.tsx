@@ -24,13 +24,13 @@ export function Textarea({ label, hint, error, id, className = '', ...rest }: Pr
         id={areaId}
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy}
-        className={`w-full resize-y rounded-lg bg-surface-container-low px-3.5 py-2.5 text-body-md text-on-surface shadow-hairline transition-all duration-150 placeholder:text-outline focus:bg-surface-container-lowest focus:outline-none focus:ring-2 focus:ring-secondary/20 ${
+        className={`w-full resize-y rounded-lg bg-surface-container-low px-3.5 py-2.5 text-body-md text-on-surface shadow-hairline transition-all duration-150 placeholder:text-outline focus:bg-surface-container-lowest focus:outline-none focus:ring-2 focus:ring-secondary ${
           error ? 'ring-2 ring-error/40 focus:ring-error/60' : ''
         } ${className}`}
         {...rest}
       />
       {error ? (
-        <p id={`${areaId}-error`} className="text-label-sm text-on-error-container">
+        <p id={`${areaId}-error`} role="alert" className="text-label-sm text-on-error-container">
           {error}
         </p>
       ) : (
