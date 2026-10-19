@@ -198,6 +198,32 @@ export function DetalleDespachoPage() {
         </Card>
       </div>
 
+      <Card className="mt-space-lg p-space-xl">
+        <SectionHeader
+          icon="contact_phone"
+          title="Contacto del cliente"
+          description="Datos capturados en el levantamiento; úselos para coordinar cobro y entrega."
+        />
+        <dl className="grid grid-cols-1 gap-space-md text-body-md sm:grid-cols-2">
+          <div>
+            <dt className={dt}>Contacto</dt>
+            <dd className="text-on-surface">{p.contacto_nombre}</dd>
+          </div>
+          <div>
+            <dt className={dt}>Teléfono</dt>
+            <dd className="text-on-surface">{p.contacto_telefono ?? '—'}</dd>
+          </div>
+          <div>
+            <dt className={dt}>Correo</dt>
+            <dd className="text-on-surface">{p.contacto_email ?? '—'}</dd>
+          </div>
+          <div>
+            <dt className={dt}>Dirección</dt>
+            <dd className="text-on-surface">{p.contacto_direccion ?? '—'}</dd>
+          </div>
+        </dl>
+      </Card>
+
       {p.negacion && (
         <Card className="mt-space-lg bg-error-container p-space-xl">
           <h2 className="text-title-lg font-bold text-on-error-container">
