@@ -18,6 +18,7 @@ import { SectionHeader } from '../../molecules/SectionHeader'
 import { DataTable } from '../../organisms/DataTable'
 import { ErrorState, LoadingState } from '../../organisms/Feedback'
 import { PageHeader } from '../../templates/PageHeader'
+import { descargar } from '../../shared/api/client'
 import { formatDateTime, formatMoney } from '../../shared/lib/format'
 
 const METODOS = [
@@ -37,6 +38,7 @@ export function DetalleProyectoVentasPage() {
   const [monto, setMonto] = useState('')
   const [metodo, setMetodo] = useState('efectivo')
   const [msg, setMsg] = useState<string | null>(null)
+  const [errPdf, setErrPdf] = useState<string | null>(null)
 
   if (isLoading) return <LoadingState />
   if (error || !project)
@@ -190,19 +192,25 @@ export function DetalleProyectoVentasPage() {
               {
                 header: '',
                 cell: (f) => (
-                  <a
-                    href={invoicePdfUrl(f.id)}
-                    target="_blank"
-                    rel="noreferrer"
+                  <button
+                    type="button"
+                    onClick={() =>
+                      descargar(invoicePdfUrl(f.id)).catch((e: Error) => setErrPdf(e.message))
+                    }
                     className="inline-flex items-center gap-1 text-secondary hover:underline"
                   >
                     <Icon name="download" size="sm" />
                     PDF
-                  </a>
+                  </button>
                 ),
               },
             ]}
           />
+          {errPdf && (
+            <p role="alert" className="mt-space-sm text-body-md text-on-error-container">
+              {errPdf}
+            </p>
+          )}
         </div>
       </div>
 

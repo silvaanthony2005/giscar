@@ -42,3 +42,38 @@ export const api = {
     request<T>(path, { method: 'PATCH', body: JSON.stringify(body) }),
   delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
 }
+
+const nombreDesdeDisposition = (h: string | null): string | null => {
+  const estrella = h?.match(/filename\*=UTF-8''([^;]+)/i)
+  if (estrella) return decodeURIComponent(estrella[1])
+  const simple = h?.match(/filename="?([^";]+)"?/i)
+  return simple ? simple[1] : null
+}
+
+/**
+ * Descarga un archivo autenticado. El navegador no envía el header
+ * Authorization en un `<a href>`, así que el binario se trae con fetch
+ * (con el mismo manejo de sesión y errores que el resto de la API) y la
+ * descarga se dispara desde un blob.
+ */
+export async function descargar(url: string): Promise<void> {
+  const token = useAuthStore.getState().token
+  const res = await fetch(url, {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  })
+  if (res.status === 401) {
+    useAuthStore.getState().clear()
+    throw new ApiError(401, 'Sesión expirada')
+  }
+  if (!res.ok) {
+    const body = await res.json().catch(() => null)
+    const msg = body?.detail ?? `Error ${res.status}`
+    throw new ApiError(res.status, typeof msg === 'string' ? msg : JSON.stringify(msg))
+  }
+  const blobUrl = URL.createObjectURL(await res.blob())
+  const a = document.createElement('a')
+  a.href = blobUrl
+  a.download = nombreDesdeDisposition(res.headers.get('content-disposition')) ?? 'archivo'
+  a.click()
+  URL.revokeObjectURL(blobUrl)
+}

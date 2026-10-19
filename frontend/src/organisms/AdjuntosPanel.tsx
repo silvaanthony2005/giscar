@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Card } from '../atoms/Card'
 import { Icon } from '../atoms/Icon'
 import { SectionHeader } from '../molecules/SectionHeader'
@@ -6,6 +7,7 @@ import {
   useAttachments,
   useUploadAttachment,
 } from '../entities/project/desarrollo-api'
+import { descargar } from '../shared/api/client'
 
 interface Props {
   /** Entidad dueña de los adjuntos (`plan`, `incidencia`, …). */
@@ -27,6 +29,7 @@ export function AdjuntosPanel({
 }: Props) {
   const { data, error } = useAttachments(tipo, entidadId)
   const upload = useUploadAttachment()
+  const [errDescarga, setErrDescarga] = useState<string | null>(null)
   const adjuntos = data ?? []
 
   return (
@@ -37,15 +40,16 @@ export function AdjuntosPanel({
           {adjuntos.map((a) => (
             <li key={a.id} className="flex items-center justify-between text-body-md">
               <span className="truncate text-on-surface">{a.nombre}</span>
-              <a
-                href={attachmentUrl(a.id)}
-                target="_blank"
-                rel="noreferrer"
+              <button
+                type="button"
+                onClick={() =>
+                  descargar(attachmentUrl(a.id)).catch((e: Error) => setErrDescarga(e.message))
+                }
                 className="ml-space-sm inline-flex shrink-0 items-center gap-1 text-secondary hover:underline"
               >
                 <Icon name="download" size="sm" />
                 Descargar
-              </a>
+              </button>
             </li>
           ))}
           {adjuntos.length === 0 && (
@@ -75,6 +79,11 @@ export function AdjuntosPanel({
         {upload.error && (
           <p className="mt-space-sm text-body-md text-on-error-container">
             {upload.error.message}
+          </p>
+        )}
+        {errDescarga && (
+          <p role="alert" className="mt-space-sm text-body-md text-on-error-container">
+            {errDescarga}
           </p>
         )}
         {error && (
