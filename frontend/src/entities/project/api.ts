@@ -105,6 +105,7 @@ export function useCreatePayment(pid: string) {
     mutationFn: (body: unknown) => api.post<Payment>(`/ventas/proyectos/${pid}/pagos`, body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [Q, 'pagos', pid] })
+      qc.invalidateQueries({ queryKey: [Q, 'facturas', pid] })
       qc.invalidateQueries({ queryKey: [Q, 'proyectos'] })
       qc.invalidateQueries({ queryKey: [Q, 'proyecto', pid] })
     },

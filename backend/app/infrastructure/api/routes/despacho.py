@@ -33,6 +33,20 @@ def _now() -> datetime:
     return datetime.now(UTC)
 
 
+def _payment_out(p) -> dict:
+    # `p` es un Payment de dominio; `monto` es Money, hay que pasarlo a importe.
+    return {
+        "id": p.id,
+        "project_id": p.project_id,
+        "monto": p.monto.amount,
+        "porcentaje": p.porcentaje,
+        "tipo": p.tipo.value,
+        "metodo_pago": p.metodo_pago,
+        "notas": p.notas,
+        "fecha": p.fecha,
+    }
+
+
 def _project_out(p, pagado) -> dict:
     return {
         "id": p.id,
@@ -108,7 +122,7 @@ def get_project(pid: str, db: DbSession, _: DespachoUser):
         "pagado": pagado.amount,
         "saldo": saldo.amount,
         "por_pagado": int(pagado.cents * 100 / p.monto_total.cents) if p.monto_total.cents else 0,
-        "pagos": pagos,
+        "pagos": [_payment_out(pg) for pg in pagos],
         "entrega": DispatchRepository(db).get_by_project(pid),
         "negacion": DenialRepository(db).get_by_project(pid),
     }
