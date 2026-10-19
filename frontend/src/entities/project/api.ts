@@ -115,9 +115,14 @@ export function useSendToDesarrollo() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (pid: string) => api.post<Project>(`/ventas/proyectos/${pid}/pasar-desarrollo`),
-    onSuccess: (_data, pid) => {
-      qc.invalidateQueries({ queryKey: [Q, 'proyectos'] })
-      qc.invalidateQueries({ queryKey: [Q, 'proyecto', pid] })
+    onSuccess: async (_data, pid) => {
+      // El proyecto entra en el tablero de Desarrollo: hay que refrescarlo ya.
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: [Q, 'proyectos'] }),
+        qc.invalidateQueries({ queryKey: [Q, 'proyecto', pid] }),
+        qc.invalidateQueries({ queryKey: ['desarrollo', 'tablero'] }),
+        qc.invalidateQueries({ queryKey: ['panel', 'contadores'] }),
+      ])
     },
   })
 }

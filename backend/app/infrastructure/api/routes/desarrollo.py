@@ -61,13 +61,14 @@ def _plan_out(p) -> s.PlanOut:
     )
 
 
-def _phase_out(p) -> s.PhaseOut:
+def _phase_out(p, activo: bool = True) -> s.PhaseOut:
     return s.PhaseOut(
         id=p.id, orden=p.orden, nombre=p.nombre, descripcion=p.descripcion,
         fecha_inicio=p.fecha_inicio, fecha_fin_estimada=p.fecha_fin_estimada,
         fecha_fin_real=p.fecha_fin_real, horas_estimadas=p.horas_estimadas,
         horas_reales=p.horas_reales, estado=p.estado,
-        acciones=dev_service.acciones_fase(p),
+        # Las fases solo se pueden mover mientras el desarrollo esté en curso.
+        acciones=dev_service.acciones_fase(p) if activo else (),
     )
 
 
@@ -111,6 +112,29 @@ def _get_project_or_404(db, pid: str):
     return project
 
 
+def _miembros_out(db, pid: str) -> list[dict]:
+    repo = MemberRepository(db)
+    users = {u.id: u for u in UserRepository(db).list_all()}
+    return [
+        s.MemberOut(
+            id=m.id, user_id=m.user_id,
+            nombre_usuario=users[m.user_id].nombre if m.user_id in users else "—",
+            rol_proyecto=m.rol_proyecto, fecha_asignacion=m.fecha_asignacion,
+        ).model_dump(mode="json")
+        for m in repo.list_by_project(pid)
+    ]
+
+
+def _en_desarrollo(project) -> bool:
+    """Solo se trabaja en fases/avances cuando el proyecto está en desarrollo."""
+    return project.estado_desarrollo == "en_desarrollo"
+
+
+def _exigir_en_desarrollo(project) -> None:
+    if not _en_desarrollo(project):
+        raise HTTPException(422, "Primero inicia el desarrollo del proyecto para continuar")
+
+
 @router.get("/proyectos")
 def list_projects(db: DbSession, _: DesarrolloUser):
     """Columnas del tablero de Desarrollo.
@@ -133,10 +157,12 @@ def list_projects(db: DbSession, _: DesarrolloUser):
 @router.get("/proyectos/{pid}/acciones", response_model=dict)
 def project_actions(pid: str, db: DbSession, _: DesarrolloUser):
     """Acciones disponibles para Desarrollo (el backend decide, el frontend solo las pinta)."""
+    project = _get_project_or_404(db, pid)
     return {
         "acciones": project_service.acciones_desarrollo(
-            _get_project_or_404(db, pid), fases_pendientes=_fases_pendientes(db, pid)
-        )
+            project, fases_pendientes=_fases_pendientes(db, pid)
+        ),
+        "estado_desarrollo": project.estado_desarrollo,
     }
 
 
@@ -145,21 +171,15 @@ def get_plan(pid: str, db: DbSession, _: DesarrolloUser):
     plan = PlanRepository(db).get_by_project(pid)
     if plan is None:
         raise HTTPException(404, "El proyecto aún no tiene plan")
+    project = _get_project_or_404(db, pid)
+    activo = _en_desarrollo(project)
     fases = PhaseRepository(db).list_by_plan(plan.id)
-    miembros = MemberRepository(db).list_by_project(pid)
-    users = {u.id: u for u in UserRepository(db).list_all()}
     avances = ProgressRepository(db).list_by_project(pid)
+    users = {u.id: u for u in UserRepository(db).list_all()}
     return {
         "plan": _plan_out(plan),
-        "fases": [_phase_out(f) for f in fases],
-        "miembros": [
-            s.MemberOut(
-                id=m.id, user_id=m.user_id,
-                nombre_usuario=users[m.user_id].nombre if m.user_id in users else "—",
-                rol_proyecto=m.rol_proyecto, fecha_asignacion=m.fecha_asignacion,
-            ).model_dump(mode="json")
-            for m in miembros
-        ],
+        "fases": [_phase_out(f, activo) for f in fases],
+        "miembros": _miembros_out(db, pid),
         "avances": [
             s.ProgressOut(
                 id=a.id, phase_id=a.phase_id, porcentaje=a.porcentaje, notas=a.notas,
@@ -168,8 +188,10 @@ def get_plan(pid: str, db: DbSession, _: DesarrolloUser):
             for a in avances
         ],
         "horas_totales_fases": dev_service.plan_horas_por_fases(fases),
+        "estado_desarrollo": project.estado_desarrollo,
+        "puede_registrar_avance": activo,
         "acciones": project_service.acciones_desarrollo(
-            _get_project_or_404(db, pid), fases_pendientes=_fases_pendientes(db, pid)
+            project, fases_pendientes=_fases_pendientes(db, pid)
         ),
     }
 
@@ -231,6 +253,7 @@ def get_phase(pid: str, fid: str, db: DbSession, _: DesarrolloUser) -> s.PhaseOu
 
 @router.post("/proyectos/{pid}/fases/{fid}/estado", response_model=s.PhaseOut)
 def change_phase_state(pid: str, fid: str, body: s.PhaseStateRequest, db: DbSession, user: DesarrolloUser):
+    _exigir_en_desarrollo(_get_project_or_404(db, pid))
     repo = PhaseRepository(db)
     phase = repo.get(fid)
     if phase is None:
@@ -245,7 +268,7 @@ def change_phase_state(pid: str, fid: str, body: s.PhaseStateRequest, db: DbSess
 
 @router.post("/proyectos/{pid}/avance", response_model=s.ProgressOut, status_code=201)
 def record_progress(pid: str, body: s.ProgressIn, db: DbSession, user: DesarrolloUser):
-    _get_project_or_404(db, pid)
+    _exigir_en_desarrollo(_get_project_or_404(db, pid))
     result = dev_service.record_progress(
         id=new_id(), project_id=pid, phase_id=body.phase_id, user_id=user.id,
         porcentaje=body.porcentaje, notas=body.notas, fecha=_now(),
@@ -344,6 +367,50 @@ def get_cancellation(pid: str, db: DbSession, _: DesarrolloUser):
     return s.CancellationOut(
         id=c.id, project_id=c.project_id, motivo=c.motivo, informe=c.informe, fecha=c.fecha,
     )
+
+
+# --- Miembros del proyecto ---------------------------------------------------
+
+
+@router.get("/catalogo-usuarios", response_model=list[s.CatalogoUsuarioOut])
+def catalogo_usuarios(db: DbSession, _: DesarrolloUser):
+    """Usuarios activos que Desarrollo puede asignar a sus proyectos."""
+    activos = filter(lambda u: u.estado == "activo", UserRepository(db).list_all())
+    return [
+        s.CatalogoUsuarioOut(id=u.id, nombre=u.nombre, departamento=u.departamento.value)
+        for u in activos
+    ]
+
+
+@router.post("/proyectos/{pid}/miembros", response_model=list[s.MemberOut])
+def add_members(pid: str, body: s.AddMembersRequest, db: DbSession, _: DesarrolloUser):
+    _get_project_or_404(db, pid)
+    member_repo = MemberRepository(db)
+    user_repo = UserRepository(db)
+    ya_asignados = {m.user_id for m in member_repo.list_by_project(pid)}
+    for uid in body.user_ids:
+        if uid in ya_asignados:
+            continue
+        if user_repo.get_by_id(uid) is None:
+            raise HTTPException(404, f"Usuario {uid} no encontrado")
+        member_repo.add(
+            ProjectMember(
+                id=new_id(), project_id=pid, user_id=uid,
+                rol_proyecto="Miembro", fecha_asignacion=_now(),
+            )
+        )
+        ya_asignados.add(uid)
+    db.commit()
+    return _miembros_out(db, pid)
+
+
+@router.delete("/proyectos/{pid}/miembros/{mid}", status_code=204)
+def remove_member(pid: str, mid: str, db: DbSession, _: DesarrolloUser):
+    miembro = next((m for m in MemberRepository(db).list_by_project(pid) if m.id == mid), None)
+    if miembro is None:
+        raise HTTPException(404, "Miembro no encontrado")
+    MemberRepository(db).delete(mid)
+    db.commit()
 
 
 # --- Adjuntos ---------------------------------------------------------------

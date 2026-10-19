@@ -61,6 +61,16 @@ class MemberOut(BaseModel):
     fecha_asignacion: datetime
 
 
+class AddMembersRequest(BaseModel):
+    user_ids: list[str] = Field(min_length=1)
+
+
+class CatalogoUsuarioOut(BaseModel):
+    id: str
+    nombre: str
+    departamento: str
+
+
 class ProgressIn(BaseModel):
     porcentaje: int = Field(ge=0, le=100)
     notas: str = Field(min_length=1)

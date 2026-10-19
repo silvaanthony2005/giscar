@@ -1,27 +1,34 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
+  useAsignarMiembros,
   useCancel,
   useCancellation,
   useAcciones,
+  useCatalogoUsuarios,
   useCreatePlan,
   usePhaseAction,
   usePlan,
   useProjectActions,
+  useQuitarMiembro,
   useRecordProgress,
 } from '../../entities/project/desarrollo-api'
 import { Button } from '../../atoms/Button'
 import { Card } from '../../atoms/Card'
+import { Checkbox } from '../../atoms/Checkbox'
 import { Icon } from '../../atoms/Icon'
+import { IconButton } from '../../atoms/IconButton'
 import { Input } from '../../atoms/Input'
 import { Textarea } from '../../atoms/Textarea'
 import { EstadoBadge } from '../../molecules/EstadoBadge'
+import { FlujoProyecto } from '../../molecules/FlujoProyecto'
 import { Modal } from '../../molecules/Modal'
 import { SectionHeader } from '../../molecules/SectionHeader'
 import { AdjuntosPanel } from '../../organisms/AdjuntosPanel'
 import { ErrorState, LoadingState } from '../../organisms/Feedback'
 import { PageHeader } from '../../templates/PageHeader'
-import { formatDateTime } from '../../shared/lib/format'
+import { ApiError } from '../../shared/api/client'
+import { DEPARTAMENTOS, formatDateTime } from '../../shared/lib/format'
 
 interface FaseForm {
   orden: number
@@ -29,8 +36,6 @@ interface FaseForm {
   descripcion: string
   horas_estimadas: number
 }
-
-const filaFase = 'pl-3.5 pr-3.5'
 
 export function DetalleProyectoDesarrolloPage() {
   const { id = '' } = useParams()
@@ -40,6 +45,9 @@ export function DetalleProyectoDesarrolloPage() {
   const recordProgress = useRecordProgress(id)
   const actions = useProjectActions(id)
   const cancel = useCancel(id)
+  const catalogo = useCatalogoUsuarios()
+  const asignar = useAsignarMiembros(id)
+  const quitar = useQuitarMiembro(id)
   const { data: cancellation } = useCancellation(id)
   const { data: accionesData } = useAcciones(id)
   const sinPlanAcciones = accionesData?.acciones ?? []
@@ -64,6 +72,23 @@ export function DetalleProyectoDesarrolloPage() {
     horas_estimadas: 0,
   })
   const [msg, setMsg] = useState<string | null>(null)
+  const [faseError, setFaseError] = useState<string | null>(null)
+  const [miembrosSel, setMiembrosSel] = useState<string[]>([])
+  const [showMembers, setShowMembers] = useState(false)
+  const [seleccion, setSeleccion] = useState<string[]>([])
+
+  const alternaMiembro = (uid: string) =>
+    setMiembrosSel((prev) => (prev.includes(uid) ? prev.filter((x) => x !== uid) : [...prev, uid]))
+
+  const addFase = () => {
+    if (!faseTmp.nombre.trim()) {
+      setFaseError('La fase necesita un nombre para poder añadirse.')
+      return
+    }
+    setFases([...fases, faseTmp])
+    setFaseTmp({ orden: fases.length + 2, nombre: '', descripcion: '', horas_estimadas: 0 })
+    setFaseError(null)
+  }
 
   const [showProgress, setShowProgress] = useState(false)
   const [avancePct, setAvancePct] = useState(50)
@@ -107,130 +132,227 @@ export function DetalleProyectoDesarrolloPage() {
         <PageHeader
           breadcrumb={['Desarrollo', 'Proyectos']}
           title="Crear plan de desarrollo"
-          subtitle="Resumen, objetivos y desglose de fases con estimación de horas."
+          subtitle="Alcance, equipo y desglose de fases con estimación de horas."
+          actions={
+            <Link
+              to="/desarrollo"
+              className="inline-flex items-center gap-1 text-body-md text-secondary hover:underline"
+            >
+              <Icon name="arrow_back" size="sm" />
+              Volver
+            </Link>
+          }
         />
-        {error && <ErrorState message={error.message} />}
-        <Card className="max-w-2xl p-space-xl">
-          <SectionHeader
-            icon="account_tree"
-            title="Plan técnico"
-            description="Define el alcance y el desglose de trabajo por fases."
-            chip="Obligatorio"
-          />
-          <form
-            onSubmit={(e: FormEvent) => {
-              e.preventDefault()
-              setMsg(null)
-              createPlan.mutate(
-                {
-                  resumen,
-                  objetivos,
-                  horas_estimadas: Number(horas),
-                  fases,
-                  miembros: [],
-                },
-                { onError: (err) => setMsg(err.message) },
-              )
-            }}
-            className="space-y-space-lg"
-          >
-            <Input
-              label="Resumen *"
-              value={resumen}
-              onChange={(e) => setResumen(e.target.value)}
-              required
-            />
-            <Textarea
-              label="Objetivos"
-              rows={3}
-              value={objetivos}
-              onChange={(e) => setObjetivos(e.target.value)}
-            />
-            <Input
-              label="Horas estimadas totales *"
-              type="number"
-              min="1"
-              value={horas}
-              onChange={(e) => setHoras(e.target.value)}
-              required
-            />
+        {/* El 404 es el estado normal (aún no hay plan); solo avisamos fallos reales. */}
+        {error && !(error instanceof ApiError && error.status === 404) && (
+          <ErrorState message={error.message} />
+        )}
+        <FlujoProyecto estado={accionesData?.estado_desarrollo ?? 'pendiente'} />
 
-            <div className="border-t border-outline-variant/60 pt-space-lg">
-              <p className="mb-space-md text-title-md text-on-surface">Fases</p>
-              <div className="grid grid-cols-12 gap-space-sm">
+        <form
+          onSubmit={(e: FormEvent) => {
+            e.preventDefault()
+            setMsg(null)
+            createPlan.mutate(
+              {
+                resumen,
+                objetivos,
+                horas_estimadas: Number(horas),
+                fases,
+                miembros: miembrosSel,
+              },
+              { onError: (err) => setMsg(err.message) },
+            )
+          }}
+          className="mt-space-xl"
+        >
+          <div className="grid gap-space-xl lg:grid-cols-3">
+            <Card className="p-space-xl lg:col-span-2">
+              <SectionHeader
+                icon="article"
+                title="Alcance del plan"
+                description="Qué se construye y cuántas horas se estiman."
+                chip="Obligatorio"
+              />
+              <div className="space-y-space-lg">
                 <Input
-                  aria-label="Orden"
-                  className={`col-span-2 ${filaFase}`}
+                  label="Resumen *"
+                  hint="Una frase con el alcance del trabajo."
+                  value={resumen}
+                  onChange={(e) => setResumen(e.target.value)}
+                  required
+                />
+                <Textarea
+                  label="Objetivos"
+                  rows={4}
+                  hint="Resultado que debe lograrse con este proyecto."
+                  value={objetivos}
+                  onChange={(e) => setObjetivos(e.target.value)}
+                />
+                <Input
+                  label="Horas estimadas totales *"
                   type="number"
                   min="1"
-                  placeholder="Orden"
-                  value={faseTmp.orden}
-                  onChange={(e) => setFaseTmp({ ...faseTmp, orden: Number(e.target.value) })}
+                  inputMode="numeric"
+                  hint="Suma esperada de horas del equipo."
+                  value={horas}
+                  onChange={(e) => setHoras(e.target.value)}
+                  required
                 />
-                <Input
-                  aria-label="Nombre de la fase"
-                  className={`col-span-4 ${filaFase}`}
-                  placeholder="Nombre"
-                  value={faseTmp.nombre}
-                  onChange={(e) => setFaseTmp({ ...faseTmp, nombre: e.target.value })}
-                />
-                <Input
-                  aria-label="Horas de la fase"
-                  className={`col-span-3 ${filaFase}`}
-                  type="number"
-                  min="0"
-                  placeholder="Horas"
-                  value={faseTmp.horas_estimadas}
-                  onChange={(e) =>
-                    setFaseTmp({ ...faseTmp, horas_estimadas: Number(e.target.value) })
-                  }
-                />
-                <Button
-                  type="button"
-                  variant="tonal"
-                  className="col-span-3 h-10"
-                  onClick={() => {
-                    if (!faseTmp.nombre.trim()) return
-                    setFases([...fases, faseTmp])
-                    setFaseTmp({
-                      orden: fases.length + 2,
-                      nombre: '',
-                      descripcion: '',
-                      horas_estimadas: 0,
-                    })
-                  }}
-                >
-                  Añadir fase
-                </Button>
               </div>
-              {fases.length > 0 && (
-                <ul className="mt-space-md space-y-space-xs">
-                  {fases.map((f, i) => (
-                    <li
-                      key={i}
-                      className="flex items-center justify-between rounded-lg bg-surface-container-low px-space-md py-space-sm text-body-md"
-                    >
-                      <span className="text-on-surface">
-                        {f.orden}. {f.nombre} ({f.horas_estimadas}h)
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setFases(fases.filter((_, j) => j !== i))}
-                        className="text-on-error-container hover:underline"
-                      >
-                        Quitar
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+            </Card>
+
+            <Card className="p-space-xl">
+              <SectionHeader
+                icon="groups"
+                title="Equipo asignado"
+                description="Personas que trabajarán en el proyecto."
+              />
+              {catalogo.isLoading && (
+                <p className="text-body-md text-on-surface-variant">Cargando equipo…</p>
               )}
+              {catalogo.error && (
+                <p role="alert" className="text-body-md text-on-error-container">
+                  {catalogo.error.message}
+                </p>
+              )}
+              {catalogo.data && catalogo.data.length === 0 && (
+                <p className="text-body-md text-on-surface-variant">
+                  No hay usuarios disponibles para asignar.
+                </p>
+              )}
+              {catalogo.data && catalogo.data.length > 0 && (
+                <fieldset>
+                  <legend className="sr-only">Miembros del proyecto</legend>
+                  <ul className="max-h-72 space-y-1 overflow-y-auto">
+                    {catalogo.data.map((u) => (
+                      <li key={u.id}>
+                        <Checkbox
+                          label={u.nombre}
+                          sublabel={DEPARTAMENTOS[u.departamento] ?? u.departamento}
+                          checked={miembrosSel.includes(u.id)}
+                          onChange={() => alternaMiembro(u.id)}
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                </fieldset>
+              )}
+            </Card>
+          </div>
+
+          <Card className="mt-space-xl p-space-xl">
+            <SectionHeader
+              icon="list_alt"
+              title="Fases del trabajo"
+              description="Cada fase con sus horas; se podrán mover una vez inicies el desarrollo."
+              chip={fases.length > 0 ? `${fases.length} añadida${fases.length === 1 ? '' : 's'}` : undefined}
+            />
+            {fases.length > 0 && (
+              <ul className="space-y-space-sm">
+                {fases.map((f, i) => (
+                  <li
+                    key={i}
+                    className="flex items-start gap-space-sm rounded-lg border border-outline-variant/60 bg-surface-container-lowest px-space-md py-space-sm"
+                  >
+                    <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-secondary text-label-sm font-bold text-on-secondary">
+                      {f.orden}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-body-md font-medium text-on-surface">
+                        {f.nombre}
+                        <span className="font-normal text-on-surface-variant">
+                          {' '}
+                          · {f.horas_estimadas}h
+                        </span>
+                      </span>
+                      {f.descripcion && (
+                        <span className="block text-body-sm text-on-surface-variant">
+                          {f.descripcion}
+                        </span>
+                      )}
+                    </span>
+                    <IconButton
+                      icon="delete"
+                      tone="danger"
+                      label={`Quitar la fase ${f.nombre}`}
+                      onClick={() => setFases(fases.filter((_, j) => j !== i))}
+                    />
+                  </li>
+                ))}
+              </ul>
+            )}
+            {fases.length === 0 && (
+              <p className="text-body-md text-on-surface-variant">
+                Aún no hay fases. Añade la primera abajo.
+              </p>
+            )}
+
+            <div className="mt-space-lg rounded-lg border border-dashed border-outline-variant bg-surface-container-lowest p-space-md">
+              <p className="text-label-md font-semibold text-on-surface-variant">Añadir fase</p>
+              <div className="mt-space-sm grid gap-space-md sm:grid-cols-12">
+                <div className="sm:col-span-2">
+                  <Input
+                    label="Orden"
+                    type="number"
+                    min="1"
+                    inputMode="numeric"
+                    value={faseTmp.orden}
+                    onChange={(e) => setFaseTmp({ ...faseTmp, orden: Number(e.target.value) })}
+                  />
+                </div>
+                <div className="sm:col-span-6">
+                  <Input
+                    label="Nombre de la fase *"
+                    value={faseTmp.nombre}
+                    onChange={(e) => {
+                      setFaseTmp({ ...faseTmp, nombre: e.target.value })
+                      setFaseError(null)
+                    }}
+                    error={faseError ?? undefined}
+                  />
+                </div>
+                <div className="sm:col-span-4">
+                  <Input
+                    label="Horas"
+                    type="number"
+                    min="0"
+                    inputMode="numeric"
+                    value={faseTmp.horas_estimadas}
+                    onChange={(e) =>
+                      setFaseTmp({ ...faseTmp, horas_estimadas: Number(e.target.value) })
+                    }
+                  />
+                </div>
+                <div className="sm:col-span-12">
+                  <Textarea
+                    label="Descripción"
+                    rows={2}
+                    hint="Qué se hace en esta fase (opcional)."
+                    value={faseTmp.descripcion}
+                    onChange={(e) => setFaseTmp({ ...faseTmp, descripcion: e.target.value })}
+                  />
+                </div>
+                <div className="flex justify-end sm:col-span-12">
+                  <Button type="button" variant="tonal" icon="add" onClick={addFase}>
+                    Añadir fase
+                  </Button>
+                </div>
+              </div>
             </div>
-            {msg && <p className="text-body-md text-on-error-container">{msg}</p>}
-            <Button type="submit" loading={createPlan.isPending} className="w-full">
+          </Card>
+
+          {msg && (
+            <p role="alert" className="mt-space-lg text-body-md text-on-error-container">
+              {msg}
+            </p>
+          )}
+          <div className="mt-space-lg flex justify-end">
+            <Button type="submit" loading={createPlan.isPending} icon="save">
               Guardar plan
             </Button>
-          </form>
-        </Card>
+          </div>
+        </form>
       </div>
     )
   }
@@ -247,13 +369,14 @@ export function DetalleProyectoDesarrolloPage() {
         code={`${proyecto.plan.horas_estimadas}h · ${proyecto.fases.length} fases`}
         actions={
           <div className="flex flex-wrap gap-space-sm">
-            <Button icon="trending_up" onClick={() => setShowProgress(true)}>
-              Registrar avance
-            </Button>
+            {proyecto.puede_registrar_avance && (
+              <Button icon="trending_up" variant="tonal" onClick={() => setShowProgress(true)}>
+                Registrar avance
+              </Button>
+            )}
             {accionesDelProyecto.includes('iniciar') && (
               <Button
                 icon="play_arrow"
-                variant="tonal"
                 loading={actions.iniciar.isPending}
                 onClick={() => onAccion(actions.iniciar)}
               >
@@ -263,7 +386,6 @@ export function DetalleProyectoDesarrolloPage() {
             {accionesDelProyecto.includes('completar') && (
               <Button
                 icon="check_circle"
-                variant="tonal"
                 loading={actions.completar.isPending}
                 onClick={() => onAccion(actions.completar)}
               >
@@ -291,17 +413,24 @@ export function DetalleProyectoDesarrolloPage() {
         phaseAction.error ||
         actions.iniciar.error ||
         actions.completar.error ||
-        actions.pasarDespacho.error) && (
-        <p className="mb-space-lg rounded-lg bg-error-container px-space-md py-space-sm text-body-md font-medium text-on-error-container">
+        actions.pasarDespacho.error ||
+        quitar.error) && (
+        <p
+          role="alert"
+          className="mb-space-lg rounded-lg bg-error-container px-space-md py-space-sm text-body-md font-medium text-on-error-container"
+        >
           {accionError ??
             phaseAction.error?.message ??
             actions.iniciar.error?.message ??
             actions.completar.error?.message ??
-            actions.pasarDespacho.error?.message}
+            actions.pasarDespacho.error?.message ??
+            quitar.error?.message}
         </p>
       )}
 
-      <div className="grid gap-space-lg lg:grid-cols-3">
+      <FlujoProyecto estado={proyecto.estado_desarrollo} />
+
+      <div className="mt-space-lg grid gap-space-xl lg:grid-cols-3">
         <Card className="p-space-xl lg:col-span-2">
           <SectionHeader
             icon="article"
@@ -340,19 +469,45 @@ export function DetalleProyectoDesarrolloPage() {
         </Card>
 
         <Card className="p-space-xl">
-          <SectionHeader
-            icon="groups"
-            title="Miembros asignados"
-            description="Equipo del proyecto."
-          />
+          <div className="flex items-start justify-between gap-space-md">
+            <SectionHeader
+              icon="groups"
+              title="Miembros asignados"
+              description="Equipo del proyecto."
+            />
+            <Button
+              size="sm"
+              variant="tonal"
+              icon="person_add"
+              onClick={() => {
+                setSeleccion(proyecto.miembros.map((m) => m.user_id))
+                setShowMembers(true)
+              }}
+            >
+              Asignar
+            </Button>
+          </div>
           {proyecto.miembros.length === 0 ? (
             <p className="text-body-md text-on-surface-variant">Sin miembros asignados aún.</p>
           ) : (
-            <ul className="space-y-space-sm">
+            <ul className="space-y-space-xs">
               {proyecto.miembros.map((m) => (
-                <li key={m.id} className="flex items-center justify-between text-body-md">
-                  <span className="text-on-surface">{m.nombre_usuario}</span>
-                  <span className="text-on-surface-variant">{m.rol_proyecto}</span>
+                <li
+                  key={m.id}
+                  className="flex items-center justify-between gap-space-sm rounded-lg px-space-sm py-1.5 hover:bg-surface-container-low"
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate text-body-md text-on-surface">
+                      {m.nombre_usuario}
+                    </span>
+                    <span className="block text-label-sm text-outline">{m.rol_proyecto}</span>
+                  </span>
+                  <IconButton
+                    icon="person_remove"
+                    tone="danger"
+                    label={`Quitar a ${m.nombre_usuario} del proyecto`}
+                    onClick={() => quitar.mutate(m.id)}
+                  />
                 </li>
               ))}
             </ul>
@@ -360,15 +515,19 @@ export function DetalleProyectoDesarrolloPage() {
         </Card>
       </div>
 
-      <section className="mt-space-xl">
+      <section className="mt-space-2xl">
         <SectionHeader
           icon="list_alt"
           title="Fases"
-          description="Estado y control de cada fase del plan."
+          description={
+            proyecto.puede_registrar_avance
+              ? 'Estado y control de cada fase del plan.'
+              : 'Estado de cada fase del plan. Se habilitan al iniciar el desarrollo.'
+          }
         />
-        <div className="space-y-space-md">
+        <div className="space-y-space-lg">
           {proyecto.fases.map((f) => (
-            <Card key={f.id} className="flex flex-wrap items-center justify-between gap-space-md p-space-lg">
+            <Card key={f.id} className="flex flex-wrap items-center justify-between gap-space-md p-space-xl">
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-space-sm">
                   <span className="text-body-md font-semibold text-on-surface">
@@ -413,7 +572,7 @@ export function DetalleProyectoDesarrolloPage() {
         </div>
       </section>
 
-      <section className="mt-space-xl grid gap-space-lg lg:grid-cols-2">
+      <section className="mt-space-2xl grid gap-space-xl lg:grid-cols-2">
         <div>
           <SectionHeader
             icon="history"
@@ -422,7 +581,7 @@ export function DetalleProyectoDesarrolloPage() {
           />
           <div className="space-y-space-md">
             {proyecto.avances.map((a) => (
-              <Card key={a.id} className="p-space-lg">
+              <Card key={a.id} className="p-space-xl">
                 <div className="flex items-center justify-between">
                   <span className="text-body-md font-semibold text-on-surface">{a.autor}</span>
                   <span className="text-body-md font-semibold text-secondary">{a.porcentaje}%</span>
@@ -440,7 +599,7 @@ export function DetalleProyectoDesarrolloPage() {
       </section>
 
       {cancellation && (
-        <Card className="mt-space-xl bg-error-container p-space-xl">
+        <Card className="mt-space-2xl bg-error-container p-space-xl">
           <h2 className="text-title-lg font-bold text-on-error-container">
             Informe de cancelación
           </h2>
@@ -532,6 +691,55 @@ export function DetalleProyectoDesarrolloPage() {
             Confirmar cancelación
           </Button>
         </form>
+      </Modal>
+
+      <Modal open={showMembers} onClose={() => setShowMembers(false)} title="Asignar miembros">
+        <p className="text-body-md text-on-surface-variant">
+          Selecciona las personas que formarán parte del proyecto.
+        </p>
+        {catalogo.isLoading && (
+          <p className="mt-space-md text-body-md text-on-surface-variant">Cargando equipo…</p>
+        )}
+        {catalogo.error && (
+          <p role="alert" className="mt-space-md text-body-md text-on-error-container">
+            {catalogo.error.message}
+          </p>
+        )}
+        {catalogo.data && (
+          <ul className="mt-space-md max-h-80 space-y-1 overflow-y-auto">
+            {catalogo.data.map((u) => (
+              <li key={u.id}>
+                <Checkbox
+                  label={u.nombre}
+                  sublabel={DEPARTAMENTOS[u.departamento] ?? u.departamento}
+                  checked={seleccion.includes(u.id)}
+                  onChange={() =>
+                    setSeleccion((prev) =>
+                      prev.includes(u.id) ? prev.filter((x) => x !== u.id) : [...prev, u.id],
+                    )
+                  }
+                />
+              </li>
+            ))}
+          </ul>
+        )}
+        {asignar.error && (
+          <p role="alert" className="mt-space-md text-body-md text-on-error-container">
+            {asignar.error.message}
+          </p>
+        )}
+        <div className="mt-space-lg flex justify-end gap-space-sm">
+          <Button variant="secondary" onClick={() => setShowMembers(false)}>
+            Cerrar
+          </Button>
+          <Button
+            loading={asignar.isPending}
+            icon="check"
+            onClick={() => asignar.mutate(seleccion, { onSuccess: () => setShowMembers(false) })}
+          >
+            Guardar selección
+          </Button>
+        </div>
       </Modal>
 
       <p className="mt-space-xl text-body-md">

@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { api } from '../../shared/api/client'
 import type { Project } from './api'
 
@@ -39,6 +39,10 @@ export interface Plan {
   miembros: Member[]
   avances: Progress[]
   horas_totales_fases: number
+  /** Estado del proyecto según el backend (lo pinta la guía de progreso). */
+  estado_desarrollo: string
+  /** True solo mientras el proyecto está en desarrollo (lo decide el backend). */
+  puede_registrar_avance: boolean
   acciones: string[]
 }
 
@@ -51,6 +55,32 @@ export interface Cancellation {
 }
 
 const Q = 'desarrollo'
+
+/**
+ * Refresca todo lo que una acción de Desarrollo toca: el detalle del proyecto,
+ * su tablero y las listas de los demás departamentos (el estado del proyecto es
+ * compartido). Se `await` en el `onSuccess` de cada mutación para que el botón
+ * siga en "cargando" hasta que la interfaz pinte el estado nuevo, y el usuario
+ * no tenga que refrescar la página para verlo.
+ */
+async function refrescar(qc: QueryClient, pid: string, planSolo = false) {
+  const claves: string[][] = planSolo
+    ? [
+        [Q, 'plan', pid],
+        [Q, 'acciones', pid],
+      ]
+    : [
+        [Q, 'plan', pid],
+        [Q, 'acciones', pid],
+        [Q, 'cancelacion', pid],
+        [Q, 'tablero'],
+        ['ventas', 'proyectos'],
+        ['ventas', 'proyecto', pid],
+        ['despacho', 'proyectos'],
+        ['panel', 'contadores'],
+      ]
+  await Promise.all(claves.map((queryKey) => qc.invalidateQueries({ queryKey })))
+}
 
 /** Columnas del tablero: el backend decide en cuál cae cada proyecto. */
 export interface TableroDesarrollo {
@@ -69,7 +99,10 @@ export function useTableroDesarrollo() {
 export function useAcciones(pid: string) {
   return useQuery({
     queryKey: [Q, 'acciones', pid],
-    queryFn: () => api.get<{ acciones: string[] }>(`/desarrollo/proyectos/${pid}/acciones`),
+    queryFn: () =>
+      api.get<{ acciones: string[]; estado_desarrollo: string }>(
+        `/desarrollo/proyectos/${pid}/acciones`,
+      ),
     enabled: !!pid,
     retry: false,
   })
@@ -88,7 +121,7 @@ export function useCreatePlan(pid: string) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (body: unknown) => api.post(`/desarrollo/proyectos/${pid}/plan`, body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: [Q, 'plan', pid] }),
+    onSuccess: () => refrescar(qc, pid),
   })
 }
 
@@ -97,7 +130,7 @@ export function usePhaseAction(pid: string) {
   return useMutation({
     mutationFn: ({ fid, target }: { fid: string; target: string }) =>
       api.post(`/desarrollo/proyectos/${pid}/fases/${fid}/estado`, { target }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: [Q, 'plan', pid] }),
+    onSuccess: () => refrescar(qc, pid, true),
   })
 }
 
@@ -105,28 +138,67 @@ export function useRecordProgress(pid: string) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (body: unknown) => api.post<Progress>(`/desarrollo/proyectos/${pid}/avance`, body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: [Q, 'plan', pid] }),
+    onSuccess: () => refrescar(qc, pid, true),
   })
 }
 
 export function useProjectActions(pid: string) {
   const qc = useQueryClient()
-  const inv = () => qc.invalidateQueries({ queryKey: [Q, 'plan', pid] })
+  const despues = () => refrescar(qc, pid)
   return {
-    iniciar: useMutation({ mutationFn: () => api.post(`/desarrollo/proyectos/${pid}/iniciar`) }),
-    completar: useMutation({ mutationFn: () => api.post(`/desarrollo/proyectos/${pid}/completar`), onSuccess: inv }),
-    pasarDespacho: useMutation({ mutationFn: () => api.post(`/desarrollo/proyectos/${pid}/pasar-despacho`), onSuccess: inv }),
+    iniciar: useMutation({
+      mutationFn: () => api.post(`/desarrollo/proyectos/${pid}/iniciar`),
+      onSuccess: despues,
+    }),
+    completar: useMutation({
+      mutationFn: () => api.post(`/desarrollo/proyectos/${pid}/completar`),
+      onSuccess: despues,
+    }),
+    pasarDespacho: useMutation({
+      mutationFn: () => api.post(`/desarrollo/proyectos/${pid}/pasar-despacho`),
+      onSuccess: despues,
+    }),
   }
+}
+
+export interface CatalogoUsuario {
+  id: string
+  nombre: string
+  departamento: string
+}
+
+/** Usuarios activos que Desarrollo puede asignar (lo lista el backend). */
+export function useCatalogoUsuarios() {
+  return useQuery({
+    queryKey: [Q, 'catalogo-usuarios'],
+    queryFn: () => api.get<CatalogoUsuario[]>('/desarrollo/catalogo-usuarios'),
+    staleTime: 60_000,
+    retry: false,
+  })
+}
+
+export function useAsignarMiembros(pid: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (user_ids: string[]) =>
+      api.post<Member[]>(`/desarrollo/proyectos/${pid}/miembros`, { user_ids }),
+    onSuccess: () => refrescar(qc, pid, true),
+  })
+}
+
+export function useQuitarMiembro(pid: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (mid: string) => api.delete(`/desarrollo/proyectos/${pid}/miembros/${mid}`),
+    onSuccess: () => refrescar(qc, pid, true),
+  })
 }
 
 export function useCancel(pid: string) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (body: unknown) => api.post<Cancellation>(`/desarrollo/proyectos/${pid}/cancelar`, body),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: [Q, 'plan', pid] })
-      qc.invalidateQueries({ queryKey: ['ventas', 'proyectos'] })
-    },
+    onSuccess: () => refrescar(qc, pid),
   })
 }
 

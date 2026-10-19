@@ -105,6 +105,12 @@ class MemberRepository:
         self._db.flush()
         return member
 
+    def delete(self, member_id: str) -> None:
+        row = self._db.get(ProjectMemberRow, member_id)
+        if row is not None:
+            self._db.delete(row)
+            self._db.flush()
+
 
 class ProgressRepository:
     def __init__(self, db: Session) -> None:
