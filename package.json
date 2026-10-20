@@ -6,6 +6,7 @@
     "dev": "npm --prefix frontend run dev",
     "api": "cd backend && uv run uvicorn app.main:app --reload --port 8000",
     "build": "npm --prefix frontend run build",
+    "package": "uv run --project backend python installer/build.py",
     "lint": "npm --prefix frontend run lint && cd backend && uv run ruff check .",
     "fmt": "cd backend && uv run ruff format .",
     "test": "cd backend && uv run pytest",
