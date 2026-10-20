@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
@@ -21,6 +22,7 @@ from app.infrastructure.api.routes import (
     tecnologia,
     ventas,
 )
+from app.infrastructure.db.seed import seed
 from app.infrastructure.db.session import init_db
 
 settings = get_settings()
@@ -47,8 +49,12 @@ def create_app() -> FastAPI:
     app.include_router(tecnologia.router)
     app.include_router(rrhh.router)
 
-    # Sirve el build del frontend en producción (PC local).
-    dist = Path(__file__).resolve().parent.parent.parent / "frontend" / "dist"
+    # Sirve el build del frontend en producción (PC local). En el .exe congelado
+    # el build viaja dentro del bundle; en dev, en frontend/dist del repo.
+    if getattr(sys, "frozen", False):
+        dist = Path(sys._MEIPASS) / "frontend" / "dist"
+    else:
+        dist = Path(__file__).resolve().parent.parent.parent / "frontend" / "dist"
     if dist.exists():
         assets = dist / "assets"
         if assets.exists():
@@ -69,6 +75,8 @@ def create_app() -> FastAPI:
     @app.on_event("startup")
     def _startup() -> None:
         init_db()
+        # Usuarios iniciales: una instalación nueva debe poder entrar (idempotente).
+        seed()
 
     return app
 
@@ -79,4 +87,8 @@ app = create_app()
 def run() -> None:
     import uvicorn
 
-    uvicorn.run("app.main:app", host="127.0.0.1", port=8000, reload=True)
+    if getattr(sys, "frozen", False):
+        # En el .exe no hay recarga posible; se pasa el objeto app directo.
+        uvicorn.run(app, host="127.0.0.1", port=8000)
+    else:
+        uvicorn.run("app.main:app", host="127.0.0.1", port=8000, reload=True)

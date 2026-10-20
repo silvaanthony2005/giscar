@@ -1,10 +1,22 @@
+import os
+import sys
 from functools import lru_cache
 from pathlib import Path
 
 from pydantic_settings import BaseSettings
 
-# backend/app/config.py -> backend/
-BASE_DIR = Path(__file__).resolve().parent.parent
+
+def _base_dir() -> Path:
+    if getattr(sys, "frozen", False):
+        # Datos en %LOCALAPPDATA%\GCISCAR, fuera de la carpeta de instalación,
+        # para que sobrevivan a desinstalaciones y actualizaciones del .exe.
+        raiz = os.environ.get("LOCALAPPDATA")
+        return Path(raiz) / "GCISCAR" if raiz else Path(sys.executable).resolve().parent
+    # backend/app/config.py -> backend/
+    return Path(__file__).resolve().parent.parent
+
+
+BASE_DIR = _base_dir()
 
 
 class Settings(BaseSettings):
