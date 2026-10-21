@@ -13,7 +13,7 @@ from app.domain.development import service as dev_service
 from app.domain.development.model import ProjectMember
 from app.domain.payment import service as payment_service
 from app.domain.project import service as project_service
-from app.domain.user.model import Departamento, User
+from app.domain.user.model import Departamento, EstadoUsuario, User
 from app.infrastructure.api import schemas_desarrollo as s
 from app.infrastructure.api import schemas_ventas as sv
 from app.infrastructure.db.models import new_id
@@ -132,7 +132,7 @@ def _en_desarrollo(project) -> bool:
 
 def _exigir_en_desarrollo(project) -> None:
     if not _en_desarrollo(project):
-        raise HTTPException(422, "Primero inicia el desarrollo del proyecto para continuar")
+        raise HTTPException(422, "Primero inicia la producción del proyecto para continuar")
 
 
 @router.get("/proyectos")
@@ -372,10 +372,15 @@ def get_cancellation(pid: str, db: DbSession, _: DesarrolloUser):
 # --- Miembros del proyecto ---------------------------------------------------
 
 
+def _es_asignable(u: User) -> bool:
+    """Solo personas activas del departamento de Producción entran en el catálogo."""
+    return u.estado == EstadoUsuario.ACTIVO and u.departamento == Departamento.DESARROLLO
+
+
 @router.get("/catalogo-usuarios", response_model=list[s.CatalogoUsuarioOut])
 def catalogo_usuarios(db: DbSession, _: DesarrolloUser):
-    """Usuarios activos que Desarrollo puede asignar a sus proyectos."""
-    activos = filter(lambda u: u.estado == "activo", UserRepository(db).list_all())
+    """Usuarios activos del departamento de Producción (solo ellos pueden asignarse)."""
+    activos = filter(_es_asignable, UserRepository(db).list_all())
     return [
         s.CatalogoUsuarioOut(id=u.id, nombre=u.nombre, departamento=u.departamento.value)
         for u in activos
@@ -391,8 +396,11 @@ def add_members(pid: str, body: s.AddMembersRequest, db: DbSession, _: Desarroll
     for uid in body.user_ids:
         if uid in ya_asignados:
             continue
-        if user_repo.get_by_id(uid) is None:
+        miembro = user_repo.get_by_id(uid)
+        if miembro is None:
             raise HTTPException(404, f"Usuario {uid} no encontrado")
+        if miembro.departamento != Departamento.DESARROLLO:
+            raise HTTPException(422, "Solo se pueden asignar miembros de Producción")
         member_repo.add(
             ProjectMember(
                 id=new_id(), project_id=pid, user_id=uid,

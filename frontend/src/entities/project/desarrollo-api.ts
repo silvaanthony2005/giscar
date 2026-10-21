@@ -167,7 +167,7 @@ export interface CatalogoUsuario {
   departamento: string
 }
 
-/** Usuarios activos que Desarrollo puede asignar (lo lista el backend). */
+/** Usuarios activos de Producción que pueden asignarse (lo lista el backend). */
 export function useCatalogoUsuarios() {
   return useQuery({
     queryKey: [Q, 'catalogo-usuarios'],
