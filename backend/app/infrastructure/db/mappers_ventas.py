@@ -17,6 +17,7 @@ def customer_to_domain(row: CustomerRow) -> Customer:
     return Customer(
         id=row.id,
         nombre=row.nombre,
+        representante=row.representante,
         documento=row.documento,
         telefono=row.telefono,
         email=row.email,
@@ -30,6 +31,7 @@ def customer_to_domain(row: CustomerRow) -> Customer:
 
 def apply_customer(c: Customer, row: CustomerRow) -> CustomerRow:
     row.nombre = c.nombre
+    row.representante = c.representante
     row.documento = c.documento
     row.telefono = c.telefono
     row.email = c.email

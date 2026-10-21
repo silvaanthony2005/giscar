@@ -105,6 +105,7 @@ def create_customer(body: s.CreateCustomerRequest, db: DbSession, user=Depends(r
     result = customer_service.create_customer(
         id=new_id(),
         nombre=body.nombre,
+        representante=body.representante,
         documento=body.documento,
         telefono=body.telefono,
         email=body.email,
@@ -164,6 +165,11 @@ def get_project(pid: str, db: DbSession, _: VentasUser) -> s.ProjectOut:
     return _project_out(project, pagado)
 
 
+def _titulo_desde_detalles(detalles: str) -> str:
+    """El formulario ya no pide título: se toman los primeros 80 caracteres de los detalles."""
+    return detalles.strip()[:80]
+
+
 @router.post("/proyectos", response_model=s.ProjectOut, status_code=201)
 def create_project(body: s.CreateProjectRequest, db: DbSession, user=Depends(require_department(Departamento.VENTAS))):
     if not CustomerRepository(db).get(body.customer_id):
@@ -173,7 +179,7 @@ def create_project(body: s.CreateProjectRequest, db: DbSession, user=Depends(req
     result = project_service.create_project(
         id=new_id(),
         codigo=codigo,
-        titulo=body.titulo,
+        titulo=body.titulo or _titulo_desde_detalles(body.descripcion_detallada),
         descripcion_detallada=body.descripcion_detallada,
         customer_id=body.customer_id,
         monto_total=Money.from_amount(Decimal(str(body.monto_total))),

@@ -74,7 +74,7 @@ export function DetalleProyectoVentasPage() {
               loading={send.isPending}
               onClick={() => send.mutate(id, { onError: (e) => alert(e.message) })}
             >
-              Enviar a Desarrollo
+              Enviar a Producción
             </Button>
           ) : null
         }
@@ -89,7 +89,7 @@ export function DetalleProyectoVentasPage() {
         <Card className="p-space-xl lg:col-span-2">
           <SectionHeader
             icon="description"
-            title="Levantamiento"
+            title="Detalles"
             description="Especificación capturada por Ventas al momento de la admisión comercial."
             chip="Obligatorio"
           />
@@ -98,13 +98,13 @@ export function DetalleProyectoVentasPage() {
           </p>
           <dl className="mt-space-lg grid grid-cols-1 gap-space-md sm:grid-cols-2">
             <div>
-              <dt className="text-label-md font-semibold tracking-wide text-outline uppercase">
+              <dt className="text-label-md font-semibold tracking-wide text-on-surface-variant uppercase">
                 Contacto
               </dt>
               <dd className="text-body-md text-on-surface">{project.contacto_nombre}</dd>
             </div>
             <div>
-              <dt className="text-label-md font-semibold tracking-wide text-outline uppercase">
+              <dt className="text-label-md font-semibold tracking-wide text-on-surface-variant uppercase">
                 Teléfono
               </dt>
               <dd className="text-body-md text-on-surface">

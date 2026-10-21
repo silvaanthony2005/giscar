@@ -4,6 +4,8 @@ import { api } from '../../shared/api/client'
 export interface Customer {
   id: string
   nombre: string
+  /** Persona de contacto responsable de la empresa. */
+  representante: string | null
   documento: string | null
   telefono: string | null
   email: string | null

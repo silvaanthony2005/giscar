@@ -97,6 +97,7 @@ def _cliente(**kw) -> Customer:
     defaults = dict(
         id="c1",
         nombre="ACME S.A.",
+        representante="Ana Reyes",
         documento="76.492.110-K",
         telefono="809-555-0001",
         email="contacto@acme.cl",

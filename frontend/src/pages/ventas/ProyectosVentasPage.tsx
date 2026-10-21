@@ -19,7 +19,6 @@ import { formatMoney } from '../../shared/lib/format'
 
 const empty = {
   customer_id: '',
-  titulo: '',
   descripcion_detallada: '',
   monto_total: '',
   contacto_nombre: '',
@@ -93,7 +92,7 @@ export function ProyectosVentasPage() {
                     onSend(p.id)
                   }}
                 >
-                  Enviar a Desarrollo
+                  Enviar a Producción
                 </Button>
               ) : null,
           },
@@ -103,7 +102,7 @@ export function ProyectosVentasPage() {
       <Modal
         open={open}
         onClose={() => setOpen(false)}
-        title="Nuevo proyecto (levantamiento)"
+        title="Nuevo proyecto (detalles)"
         width="max-w-2xl"
       >
         <form onSubmit={onSubmit} className="space-y-space-lg">
@@ -112,28 +111,29 @@ export function ProyectosVentasPage() {
             placeholder="Seleccione un cliente…"
             required
             value={form.customer_id}
-            onChange={(e) => setForm({ ...form, customer_id: e.target.value })}
+            onChange={(e) => {
+              const cliente = (customers ?? []).find((c) => c.id === e.target.value)
+              // El contacto se copia del cliente elegido; aquí no se calcula nada.
+              setForm({
+                ...form,
+                customer_id: e.target.value,
+                contacto_nombre: cliente?.representante ?? '',
+                contacto_telefono: cliente?.telefono ?? '',
+              })
+            }}
             options={(customers ?? []).map((c) => ({ value: c.id, label: c.nombre }))}
           />
-          <div className="grid grid-cols-1 gap-space-lg sm:grid-cols-2">
-            <Input
-              label="Título del proyecto *"
-              value={form.titulo}
-              onChange={(e) => setForm({ ...form, titulo: e.target.value })}
-              required
-            />
-            <Input
-              label="Monto total *"
-              type="number"
-              min="1"
-              step="0.01"
-              value={form.monto_total}
-              onChange={(e) => setForm({ ...form, monto_total: e.target.value })}
-              required
-            />
-          </div>
+          <Input
+            label="Monto total *"
+            type="number"
+            min="1"
+            step="0.01"
+            value={form.monto_total}
+            onChange={(e) => setForm({ ...form, monto_total: e.target.value })}
+            required
+          />
           <Textarea
-            label="Levantamiento detallado *"
+            label="Detalles *"
             hint="Mínimo 20 caracteres."
             rows={5}
             minLength={20}

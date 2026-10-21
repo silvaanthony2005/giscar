@@ -16,6 +16,8 @@ class CustomerRow(Base):
 
     id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
     nombre: Mapped[str] = mapped_column(String(255))
+    # Nullable solo por registros antiguos; en altas nuevas es obligatorio.
+    representante: Mapped[str | None] = mapped_column(String(255), nullable=True)
     documento: Mapped[str | None] = mapped_column(String(50), nullable=True)
     telefono: Mapped[str | None] = mapped_column(String(50), nullable=True)
     email: Mapped[str | None] = mapped_column(String(255), nullable=True)

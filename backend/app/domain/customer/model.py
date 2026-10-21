@@ -10,6 +10,7 @@ from datetime import datetime
 class Customer:
     id: str
     nombre: str
+    representante: str | None
     documento: str | None
     telefono: str | None
     email: str | None

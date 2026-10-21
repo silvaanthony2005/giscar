@@ -1,6 +1,6 @@
 from collections.abc import Generator
 
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine, event, text
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app.config import get_settings
@@ -50,3 +50,11 @@ def init_db() -> None:
     )
 
     Base.metadata.create_all(bind=engine)
+
+    # create_all no añade columnas a tablas ya existentes: migración mínima de la
+    # base local (SQLite) para que las altas nuevas de cliente puedan guardarla.
+    with engine.connect() as conn:
+        columnas = {row[1] for row in conn.execute(text("PRAGMA table_info(customers)"))}
+        if "representante" not in columnas:
+            conn.execute(text("ALTER TABLE customers ADD COLUMN representante VARCHAR(255)"))
+        conn.commit()

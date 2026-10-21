@@ -9,10 +9,11 @@ from pydantic import BaseModel, EmailStr, Field
 
 class CreateCustomerRequest(BaseModel):
     nombre: str = Field(min_length=1, max_length=255)
-    documento: str | None = None
-    telefono: str | None = None
+    representante: str = Field(min_length=1, max_length=255)
+    documento: str = Field(min_length=1, max_length=50)
+    telefono: str = Field(min_length=1, max_length=50)
+    direccion: str = Field(min_length=1)
     email: EmailStr | None = None
-    direccion: str | None = None
     notas: str | None = None
 
 
@@ -28,6 +29,7 @@ class UpdateCustomerRequest(BaseModel):
 class CustomerOut(BaseModel):
     id: str
     nombre: str
+    representante: str | None
     documento: str | None
     telefono: str | None
     email: str | None
@@ -40,7 +42,8 @@ class CustomerOut(BaseModel):
 
 class CreateProjectRequest(BaseModel):
     customer_id: str
-    titulo: str = Field(min_length=1, max_length=255)
+    # El formulario de Ventas ya no lo pide: la ruta deriva uno desde los detalles.
+    titulo: str | None = Field(default=None, min_length=1, max_length=255)
     descripcion_detallada: str = Field(min_length=20)
     monto_total: float = Field(gt=0, description="Monto total en pesos")
     contacto_nombre: str = Field(min_length=1)
