@@ -12,15 +12,23 @@ export const NAV: Record<Departamento, NavItem[]> = {
   ventas: [
     { to: '/ventas', label: 'Proyectos', icon: 'point_of_sale', end: true },
     { to: '/ventas/clientes', label: 'Clientes', icon: 'badge' },
+    { to: '/incidencias/nueva', label: 'Reportar incidencia', icon: 'report' },
   ],
-  desarrollo: [{ to: '/desarrollo', label: 'Proyectos', icon: 'terminal', end: true }],
-  despacho: [{ to: '/despacho', label: 'Cola de entregas', icon: 'local_shipping', end: true }],
+  desarrollo: [
+    { to: '/desarrollo', label: 'Proyectos', icon: 'terminal', end: true },
+    { to: '/incidencias/nueva', label: 'Reportar incidencia', icon: 'report' },
+  ],
+  despacho: [
+    { to: '/despacho', label: 'Cola de entregas', icon: 'local_shipping', end: true },
+    { to: '/incidencias/nueva', label: 'Reportar incidencia', icon: 'report' },
+  ],
   tecnologia: [{ to: '/tecnologia', label: 'Incidencias', icon: 'support_agent', end: true }],
   rrhh: [
     { to: '/rrhh', label: 'Panel general', icon: 'grid_view', end: true },
     { to: '/rrhh/usuarios', label: 'Usuarios', icon: 'manage_accounts' },
     { to: '/rrhh/proyectos', label: 'Proyectos', icon: 'folder_open' },
     { to: '/rrhh/actividad', label: 'Bitácora', icon: 'history' },
+    { to: '/incidencias/nueva', label: 'Reportar incidencia', icon: 'report' },
   ],
 }
 

@@ -26,7 +26,13 @@ export function Sidebar({ user, onNavigate }: Props) {
     grupos.push(
       ...(Object.keys(NAV) as Departamento[])
         .filter((d) => d !== 'rrhh')
-        .map((d) => ({ titulo: DEPARTAMENTOS[d], departamento: d, items: NAV[d] })),
+        .map((d) => ({
+          titulo: DEPARTAMENTOS[d],
+          departamento: d,
+          // «Reportar incidencia» es compartido y ya está en «Mi módulo»:
+          // sin este filtro RRHH lo vería repetido en cada grupo.
+          items: NAV[d].filter((i) => i.to !== '/incidencias/nueva'),
+        })),
     )
   }
 
@@ -36,7 +42,7 @@ export function Sidebar({ user, onNavigate }: Props) {
         {grupos.map((grupo) => (
           <div key={grupo.titulo}>
             <div className="mb-space-xs flex items-center justify-between px-space-lg">
-              <span className="text-label-sm font-bold uppercase tracking-wider text-outline">
+              <span className="text-label-sm font-bold uppercase tracking-wider text-on-surface-variant">
                 {grupo.titulo}
               </span>
               {/* RRHH no es una cola de trabajo: no lleva contador. */}

@@ -11,6 +11,7 @@ import { ProyectosRRHHPage } from '../pages/rrhh/ProyectosRRHHPage'
 import { UsuariosRRHHPage } from '../pages/rrhh/UsuariosRRHHPage'
 import { ColaIncidenciasPage } from '../pages/tecnologia/ColaIncidenciasPage'
 import { DetalleIncidenciaPage } from '../pages/tecnologia/DetalleIncidenciaPage'
+import { ReportarIncidenciaPage } from '../pages/incidencias/ReportarIncidenciaPage'
 import { ClientesPage } from '../pages/ventas/ClientesPage'
 import { DetalleProyectoVentasPage } from '../pages/ventas/DetalleProyectoVentasPage'
 import { ProyectosVentasPage } from '../pages/ventas/ProyectosVentasPage'
@@ -48,6 +49,7 @@ export function App() {
 
           <Route path="/tecnologia" element={<ColaIncidenciasPage />} />
           <Route path="/tecnologia/incidencias/:id" element={<DetalleIncidenciaPage />} />
+          <Route path="/incidencias/nueva" element={<ReportarIncidenciaPage />} />
 
           <Route path="/rrhh" element={<DashboardRRHHPage />} />
           <Route path="/rrhh/usuarios" element={<UsuariosRRHHPage />} />

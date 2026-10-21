@@ -102,8 +102,12 @@ def create_incidence(body: s.CreateIncidenceRequest, db: DbSession, user: Report
 
 
 @router.get("/incidencias")
-def list_incidences(db: DbSession, _: ReportIncidence):
-    """Cola ordenada por prioridad (desc) y orden de llegada (asc)."""
+def list_incidences(db: DbSession, _: TecnologiaUser):
+    """Cola ordenada por prioridad (desc) y orden de llegada (asc).
+
+    Solo Tecnología (y RRHH, lectura global) la ve: los demás departamentos
+    solo reportan, no consultan.
+    """
     users = {u.id: u for u in UserRepository(db).list_all()}
     incidencias = incidence_service.ordenar_cola(IncidentRepository(db).list_all())
     return {
@@ -113,7 +117,7 @@ def list_incidences(db: DbSession, _: ReportIncidence):
 
 
 @router.get("/incidencias/{iid}")
-def get_incidence(iid: str, db: DbSession, _: ReportIncidence):
+def get_incidence(iid: str, db: DbSession, _: TecnologiaUser):
     inc = IncidentRepository(db).get(iid)
     if inc is None:
         raise HTTPException(404, "Incidencia no encontrada")
