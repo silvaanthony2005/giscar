@@ -23,7 +23,7 @@ export function PageHeader({ breadcrumb, title, subtitle, code, actions }: Props
                 className={`text-label-sm ${
                   i === breadcrumb.length - 1
                     ? 'font-semibold text-primary'
-                    : 'text-outline'
+                    : 'text-on-surface-variant'
                 }`}
               >
                 {crumb}

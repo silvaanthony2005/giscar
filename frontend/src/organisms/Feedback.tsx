@@ -16,7 +16,7 @@ export function StatCard({
         {label}
       </p>
       <p className="mt-1 text-headline-md text-on-surface tracking-tight">{value}</p>
-      {hint && <p className="mt-1 text-label-sm text-outline">{hint}</p>}
+      {hint && <p className="mt-1 text-label-sm text-on-surface-variant">{hint}</p>}
     </Card>
   )
 }

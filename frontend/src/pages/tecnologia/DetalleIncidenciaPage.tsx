@@ -28,7 +28,7 @@ const prioridadTone: Record<string, 'danger' | 'warning' | 'info' | 'neutral'> =
   baja: 'neutral',
 }
 
-const dt = 'text-label-md font-semibold tracking-wide text-outline uppercase'
+const dt = 'text-label-md font-semibold tracking-wide text-on-surface-variant uppercase'
 
 export function DetalleIncidenciaPage() {
   const { id = '' } = useParams()
@@ -171,7 +171,7 @@ export function DetalleIncidenciaPage() {
                 <span className="text-body-md font-semibold text-on-surface">
                   {r.resuelto_por_nombre ?? '—'}
                 </span>
-                <span className="text-label-sm text-outline">
+                <span className="text-label-sm text-on-surface-variant">
                   {formatDateTime(r.fecha)} · {r.tiempo_resolucion_horas}h
                 </span>
               </div>

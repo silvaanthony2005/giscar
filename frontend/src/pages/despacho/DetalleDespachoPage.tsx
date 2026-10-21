@@ -27,7 +27,7 @@ const METODOS = [
   { value: 'cheque', label: 'Cheque' },
 ]
 
-const dt = 'text-label-md font-semibold tracking-wide text-outline uppercase'
+const dt = 'text-label-md font-semibold tracking-wide text-on-surface-variant uppercase'
 
 export function DetalleDespachoPage() {
   const { id = '' } = useParams()
@@ -258,7 +258,7 @@ export function DetalleDespachoPage() {
               </div>
               <div className="shrink-0 text-right">
                 <span className="text-body-md text-on-surface">{pg.porcentaje}%</span>
-                <p className="text-label-sm text-outline">{formatDateTime(pg.fecha)}</p>
+                <p className="text-label-sm text-on-surface-variant">{formatDateTime(pg.fecha)}</p>
               </div>
             </Card>
           ))}

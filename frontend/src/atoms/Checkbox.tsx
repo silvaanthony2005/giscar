@@ -15,7 +15,7 @@ export function Checkbox({ label, sublabel, className = '', ...rest }: Props) {
       <input type="checkbox" className="size-4 shrink-0 accent-secondary" {...rest} />
       <span className="min-w-0">
         <span className="block truncate text-body-md text-on-surface">{label}</span>
-        {sublabel && <span className="block text-label-sm text-outline">{sublabel}</span>}
+        {sublabel && <span className="block text-label-sm text-on-surface-variant">{sublabel}</span>}
       </span>
     </label>
   )

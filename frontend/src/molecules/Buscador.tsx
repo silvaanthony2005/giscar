@@ -119,7 +119,7 @@ export function Buscador({ departamento }: Props) {
           ) : (
             grupos.map(([tipo, items]) => (
               <div key={tipo} className="py-space-2xs">
-                <p className="px-space-md py-space-xs text-label-sm font-semibold tracking-wide text-outline uppercase">
+                <p className="px-space-md py-space-xs text-label-sm font-semibold tracking-wide text-on-surface-variant uppercase">
                   {TIPO_BUSQUEDA[tipo]?.label ?? tipo}
                 </p>
                 {items.map((r) => (
@@ -157,7 +157,7 @@ export function Buscador({ departamento }: Props) {
           )}
 
           {total > 0 && (
-            <p className="border-t border-outline-variant/60 px-space-md py-space-xs text-label-sm text-outline">
+            <p className="border-t border-outline-variant/60 px-space-md py-space-xs text-label-sm text-on-surface-variant">
               Buscando en {data?.tipos.map((t) => DEPARTAMENTOS[t as Departamento] ?? t).join(', ')}
             </p>
           )}
