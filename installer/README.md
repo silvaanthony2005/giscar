@@ -24,5 +24,5 @@ También disponible como `npm run package` desde la raíz.
 - Los datos se guardan en `%LOCALAPPDATA%\GCISCAR` (`giscar.db`, `uploads/`), fuera
   de la carpeta de instalación: sobreviven a actualizaciones y desinstalaciones.
 - Primera ejecución crea los usuarios iniciales (`rrhh@giscar.com`, `ventas@giscar.com`,
-  `desarrollo@giscar.com`, `despacho@giscar.com`, `tecnologia@giscar.com`),
+  `produccion@giscar.com`, `despacho@giscar.com`, `tecnologia@giscar.com`),
   todos con contraseña `giscar1234`.

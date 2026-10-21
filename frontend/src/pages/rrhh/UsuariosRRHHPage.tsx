@@ -13,10 +13,11 @@ import { SectionHeader } from '../../molecules/SectionHeader'
 import { DataTable } from '../../organisms/DataTable'
 import { ErrorState, LoadingState } from '../../organisms/Feedback'
 import { PageHeader } from '../../templates/PageHeader'
+import { DEPARTAMENTOS as NOMBRE_DEPTO } from '../../shared/lib/format'
 
 const DEPARTAMENTOS = ['ventas', 'desarrollo', 'despacho', 'tecnologia', 'rrhh']
 
-const deptoOptions = DEPARTAMENTOS.map((d) => ({ value: d, label: d }))
+const deptoOptions = DEPARTAMENTOS.map((d) => ({ value: d, label: NOMBRE_DEPTO[d] ?? d }))
 
 const empty = {
   nombre: '',
@@ -88,7 +89,7 @@ export function UsuariosRRHHPage() {
             variant={depto === d ? 'primary' : 'ghost'}
             onClick={() => setDepto(d)}
           >
-            {d}
+            {NOMBRE_DEPTO[d] ?? d}
           </Button>
         ))}
       </div>
@@ -118,7 +119,7 @@ export function UsuariosRRHHPage() {
               >
                 {DEPARTAMENTOS.map((d) => (
                   <option key={d} value={d}>
-                    {d}
+                    {NOMBRE_DEPTO[d] ?? d}
                   </option>
                 ))}
               </select>

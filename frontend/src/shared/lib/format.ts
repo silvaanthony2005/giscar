@@ -16,7 +16,7 @@ export const formatDateTime = (iso: string): string =>
 
 export const DEPARTAMENTOS: Record<string, string> = {
   ventas: 'Ventas',
-  desarrollo: 'Desarrollo',
+  desarrollo: 'Producción',
   despacho: 'Despacho',
   tecnologia: 'Tecnología',
   rrhh: 'Recursos Humanos',

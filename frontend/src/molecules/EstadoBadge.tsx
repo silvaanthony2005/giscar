@@ -9,12 +9,12 @@ const ESTADOS: Record<string, { label: string; tone: Tone }> = {
   levantamiento: { label: 'Levantamiento', tone: 'info' },
   cobrado_50: { label: 'Cobrado 50%', tone: 'warning' },
   cobrado_100: { label: 'Cobrado 100%', tone: 'success' },
-  enviado_desarrollo: { label: 'En desarrollo', tone: 'info' },
+  enviado_desarrollo: { label: 'En Producción', tone: 'info' },
   cerrado: { label: 'Cobro completo', tone: 'success' },
-  // Desarrollo
+  // Producción
   pendiente: { label: 'Pendiente', tone: 'neutral' },
   en_planificacion: { label: 'Planificación', tone: 'info' },
-  en_desarrollo: { label: 'En desarrollo', tone: 'info' },
+  en_desarrollo: { label: 'En Producción', tone: 'info' },
   completado: { label: 'Completado', tone: 'success' },
   cancelado: { label: 'Cancelado', tone: 'danger' },
   enviado_despacho: { label: 'En Despacho', tone: 'success' },

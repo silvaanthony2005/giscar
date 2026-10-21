@@ -37,6 +37,14 @@ interface FaseForm {
   horas_estimadas: number
 }
 
+/** Borrador de la fase en edición: las horas van como texto para poder vaciarlas. */
+interface FaseDraft {
+  orden: number
+  nombre: string
+  descripcion: string
+  horas: string
+}
+
 export function DetalleProyectoDesarrolloPage() {
   const { id = '' } = useParams()
   const { data: plan, isLoading, error } = usePlan(id)
@@ -65,11 +73,11 @@ export function DetalleProyectoDesarrolloPage() {
   const [objetivos, setObjetivos] = useState('')
   const [horas, setHoras] = useState('')
   const [fases, setFases] = useState<FaseForm[]>([])
-  const [faseTmp, setFaseTmp] = useState<FaseForm>({
+  const [faseTmp, setFaseTmp] = useState<FaseDraft>({
     orden: 1,
     nombre: '',
     descripcion: '',
-    horas_estimadas: 0,
+    horas: '',
   })
   const [msg, setMsg] = useState<string | null>(null)
   const [faseError, setFaseError] = useState<string | null>(null)
@@ -85,8 +93,16 @@ export function DetalleProyectoDesarrolloPage() {
       setFaseError('La fase necesita un nombre para poder añadirse.')
       return
     }
-    setFases([...fases, faseTmp])
-    setFaseTmp({ orden: fases.length + 2, nombre: '', descripcion: '', horas_estimadas: 0 })
+    setFases([
+      ...fases,
+      {
+        orden: faseTmp.orden,
+        nombre: faseTmp.nombre,
+        descripcion: faseTmp.descripcion,
+        horas_estimadas: Number(faseTmp.horas),
+      },
+    ])
+    setFaseTmp({ orden: fases.length + 2, nombre: '', descripcion: '', horas: '' })
     setFaseError(null)
   }
 
@@ -105,8 +121,8 @@ export function DetalleProyectoDesarrolloPage() {
       return (
         <div className="p-6">
           <PageHeader
-            breadcrumb={['Desarrollo', 'Proyectos']}
-            title="Plan de desarrollo"
+            breadcrumb={['Producción', 'Proyectos']}
+            title="Plan de producción"
             subtitle="El proyecto aún no tiene plan"
           />
           <Card className="max-w-2xl p-space-xl">
@@ -121,7 +137,7 @@ export function DetalleProyectoDesarrolloPage() {
               className="inline-flex items-center gap-1 text-secondary hover:underline"
             >
               <Icon name="arrow_back" size="sm" />
-              Volver a Desarrollo
+              Volver a Producción
             </Link>
           </p>
         </div>
@@ -130,8 +146,8 @@ export function DetalleProyectoDesarrolloPage() {
     return (
       <div className="p-6">
         <PageHeader
-          breadcrumb={['Desarrollo', 'Proyectos']}
-          title="Crear plan de desarrollo"
+          breadcrumb={['Producción', 'Proyectos']}
+          title="Crear plan de producción"
           subtitle="Alcance, equipo y desglose de fases con estimación de horas."
           actions={
             <Link
@@ -245,7 +261,7 @@ export function DetalleProyectoDesarrolloPage() {
             <SectionHeader
               icon="list_alt"
               title="Fases del trabajo"
-              description="Cada fase con sus horas; se podrán mover una vez inicies el desarrollo."
+              description="Cada fase con sus horas; se podrán mover una vez inicies la producción."
               chip={fases.length > 0 ? `${fases.length} añadida${fases.length === 1 ? '' : 's'}` : undefined}
             />
             {fases.length > 0 && (
@@ -318,10 +334,8 @@ export function DetalleProyectoDesarrolloPage() {
                     type="number"
                     min="0"
                     inputMode="numeric"
-                    value={faseTmp.horas_estimadas}
-                    onChange={(e) =>
-                      setFaseTmp({ ...faseTmp, horas_estimadas: Number(e.target.value) })
-                    }
+                    value={faseTmp.horas}
+                    onChange={(e) => setFaseTmp({ ...faseTmp, horas: e.target.value })}
                   />
                 </div>
                 <div className="sm:col-span-12">
@@ -363,7 +377,7 @@ export function DetalleProyectoDesarrolloPage() {
   return (
     <div className="p-6">
       <PageHeader
-        breadcrumb={['Desarrollo', 'Proyectos', 'Plan']}
+        breadcrumb={['Producción', 'Proyectos', 'Plan']}
         title={proyecto.plan.resumen}
         subtitle="Seguimiento técnico por fases, avances, evidencia y cancelación formal."
         code={`${proyecto.plan.horas_estimadas}h · ${proyecto.fases.length} fases`}
@@ -380,7 +394,7 @@ export function DetalleProyectoDesarrolloPage() {
                 loading={actions.iniciar.isPending}
                 onClick={() => onAccion(actions.iniciar)}
               >
-                Iniciar desarrollo
+                Iniciar producción
               </Button>
             )}
             {accionesDelProyecto.includes('completar') && (
@@ -448,19 +462,19 @@ export function DetalleProyectoDesarrolloPage() {
           )}
           <dl className="mt-space-lg grid grid-cols-3 gap-space-md border-t border-outline-variant/60 pt-space-lg text-center">
             <div>
-              <dt className="text-label-md font-semibold tracking-wide text-outline uppercase">
+              <dt className="text-label-md font-semibold tracking-wide text-on-surface-variant uppercase">
                 Horas plan
               </dt>
               <dd className="text-title-lg text-on-surface">{proyecto.plan.horas_estimadas}h</dd>
             </div>
             <div>
-              <dt className="text-label-md font-semibold tracking-wide text-outline uppercase">
+              <dt className="text-label-md font-semibold tracking-wide text-on-surface-variant uppercase">
                 Horas fases
               </dt>
               <dd className="text-title-lg text-on-surface">{proyecto.horas_totales_fases}h</dd>
             </div>
             <div>
-              <dt className="text-label-md font-semibold tracking-wide text-outline uppercase">
+              <dt className="text-label-md font-semibold tracking-wide text-on-surface-variant uppercase">
                 Avances
               </dt>
               <dd className="text-title-lg text-on-surface">{proyecto.avances.length}</dd>
@@ -500,7 +514,7 @@ export function DetalleProyectoDesarrolloPage() {
                     <span className="block truncate text-body-md text-on-surface">
                       {m.nombre_usuario}
                     </span>
-                    <span className="block text-label-sm text-outline">{m.rol_proyecto}</span>
+                    <span className="block text-label-sm text-on-surface-variant">{m.rol_proyecto}</span>
                   </span>
                   <IconButton
                     icon="person_remove"
@@ -522,7 +536,7 @@ export function DetalleProyectoDesarrolloPage() {
           description={
             proyecto.puede_registrar_avance
               ? 'Estado y control de cada fase del plan.'
-              : 'Estado de cada fase del plan. Se habilitan al iniciar el desarrollo.'
+              : 'Estado de cada fase del plan. Se habilitan al iniciar la producción.'
           }
         />
         <div className="space-y-space-lg">
@@ -538,7 +552,7 @@ export function DetalleProyectoDesarrolloPage() {
                 {f.descripcion && (
                   <p className="mt-1 text-body-md text-on-surface-variant">{f.descripcion}</p>
                 )}
-                <p className="mt-1 text-label-sm text-outline">
+                <p className="mt-1 text-label-sm text-on-surface-variant">
                   Estimado: {f.horas_estimadas}h
                   {f.fecha_fin_estimada ? ` · Fin estimado: ${f.fecha_fin_estimada}` : ''}
                 </p>
@@ -587,7 +601,7 @@ export function DetalleProyectoDesarrolloPage() {
                   <span className="text-body-md font-semibold text-secondary">{a.porcentaje}%</span>
                 </div>
                 <p className="mt-1 text-body-md text-on-surface-variant">{a.notas}</p>
-                <p className="mt-1 text-label-sm text-outline">{formatDateTime(a.fecha)}</p>
+                <p className="mt-1 text-label-sm text-on-surface-variant">{formatDateTime(a.fecha)}</p>
               </Card>
             ))}
             {proyecto.avances.length === 0 && (
@@ -748,7 +762,7 @@ export function DetalleProyectoDesarrolloPage() {
           className="inline-flex items-center gap-1 text-secondary hover:underline"
         >
           <Icon name="arrow_back" size="sm" />
-          Volver a Desarrollo
+          Volver a Producción
         </Link>
       </p>
     </div>

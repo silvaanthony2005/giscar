@@ -13,7 +13,9 @@ import { DEPARTAMENTOS } from '../../shared/lib/format'
  * Son direcciones fijas de la siembra local (sin contraseñas en el bundle).
  */
 const ACCESOS: Departamento[] = ['ventas', 'desarrollo', 'despacho', 'tecnologia', 'rrhh']
-const correoDe = (d: Departamento): string => `${d}@giscar.com`
+// El módulo se llama Producción, pero la clave del departamento sigue siendo
+// 'desarrollo' (así están guardados los usuarios): solo cambia el correo.
+const correoDe = (d: Departamento): string => `${d === 'desarrollo' ? 'produccion' : d}@giscar.com`
 
 export function LoginPage() {
   const [email, setEmail] = useState('')

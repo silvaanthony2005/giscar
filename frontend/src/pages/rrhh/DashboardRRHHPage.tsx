@@ -37,7 +37,7 @@ export function DashboardRRHHPage() {
       <section className="mb-space-xl">
         <SectionHeader
           icon="terminal"
-          title="Desarrollo"
+          title="Producción"
           description="Planes, fases y cancelaciones."
         />
         <div className="grid grid-cols-2 gap-space-md lg:grid-cols-3">
@@ -105,7 +105,7 @@ function Chips({ title, data }: { title: string; data: Record<string, number> })
   if (entries.length === 0) return null
   return (
     <div className="mt-space-md">
-      <p className="mb-space-sm text-label-md font-semibold tracking-wide text-outline uppercase">
+      <p className="mb-space-sm text-label-md font-semibold tracking-wide text-on-surface-variant uppercase">
         {title}
       </p>
       <div className="flex flex-wrap gap-space-xs">

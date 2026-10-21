@@ -37,7 +37,7 @@ def create_project(
         return Err(
             DomainError(
                 "project.descripcion_corta",
-                "El levantamiento debe detallar el proyecto (mínimo 20 caracteres)",
+                "Los detalles deben describir el proyecto (mínimo 20 caracteres)",
             )
         )
     if monto_total.cents <= 0:
@@ -105,7 +105,7 @@ def puede_pasar_a_desarrollo(project: Project, pagado: Money) -> Result[Project,
         return Err(
             DomainError(
                 "project.pago_insuficiente",
-                "Debe cobrarse al menos el 50% antes de pasar a Desarrollo",
+                "Debe cobrarse al menos el 50% antes de pasar a Producción",
             )
         )
     return set_estado_ventas(project, "enviado_desarrollo", now=project.updated_at)

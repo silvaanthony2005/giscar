@@ -29,7 +29,7 @@ giscar1234
 |---|---|---|---|
 | RRHH | `rrhh@giscar.com` | Ana Reyes | Admin (lectura global + usuarios) |
 | Ventas | `ventas@giscar.com` | Luis Pérez | Ventas |
-| Desarrollo | `desarrollo@giscar.com` | Marta Gómez | Desarrollo |
+| Producción | `produccion@giscar.com` | Marta Gómez | Producción |
 | Despacho | `despacho@giscar.com` | Carlos Díaz | Despacho |
 | Tecnología | `tecnologia@giscar.com` | Sofía López | Tecnología |
 

@@ -13,7 +13,7 @@ export function ProyectosRRHHPage() {
     <div className="p-6">
       <PageHeader breadcrumb={['RRHH', 'Proyectos']}
         title="Todos los Proyectos"
-        subtitle="Lectura global de los tres departamentos: Ventas, Desarrollo y Despacho." />
+        subtitle="Lectura global de los tres departamentos: Ventas, Producción y Despacho." />
       <DataTable
         rows={data ?? []}
         keyOf={(p) => p.id}
@@ -22,7 +22,7 @@ export function ProyectosRRHHPage() {
           { header: 'Código', cell: (p) => <span className="font-medium">{p.codigo}</span> },
           { header: 'Título', cell: (p) => p.titulo },
           { header: 'Ventas', cell: (p) => <EstadoBadge valor={p.estado_ventas} /> },
-          { header: 'Desarrollo', cell: (p) => <EstadoBadge valor={p.estado_desarrollo} /> },
+          { header: 'Producción', cell: (p) => <EstadoBadge valor={p.estado_desarrollo} /> },
           { header: 'Despacho', cell: (p) => <EstadoBadge valor={p.estado_despacho} /> },
         ]}
       />

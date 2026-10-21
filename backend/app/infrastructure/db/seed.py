@@ -15,7 +15,7 @@ SEED_PASSWORD = "giscar1234"
 SEEDS: list[dict] = [
     {"email": "rrhh@giscar.com", "nombre": "Ana Reyes", "departamento": Departamento.RRHH, "cargo": "Directora de RRHH"},
     {"email": "ventas@giscar.com", "nombre": "Luis Pérez", "departamento": Departamento.VENTAS, "cargo": "Ejecutivo de ventas"},
-    {"email": "desarrollo@giscar.com", "nombre": "Marta Gómez", "departamento": Departamento.DESARROLLO, "cargo": "Líder técnico"},
+    {"email": "produccion@giscar.com", "nombre": "Marta Gómez", "departamento": Departamento.DESARROLLO, "cargo": "Líder técnico"},
     {"email": "despacho@giscar.com", "nombre": "Carlos Díaz", "departamento": Departamento.DESPACHO, "cargo": "Coordinador de despacho"},
     {"email": "tecnologia@giscar.com", "nombre": "Sofía López", "departamento": Departamento.TECNOLOGIA, "cargo": "Soporte técnico"},
 ]
@@ -26,6 +26,15 @@ def seed() -> list[str]:
     now = datetime.now(UTC)
     created: list[str] = []
     with SessionLocal() as db:
+        # Migración mínima: el correo del módulo de Producción cambió de nombre.
+        # Se renombra el usuario existente para no duplicar la siembra.
+        viejo = db.query(UserRow).filter(UserRow.email == "desarrollo@giscar.com").first()
+        nuevo = db.query(UserRow).filter(UserRow.email == "produccion@giscar.com").first()
+        if viejo is not None and nuevo is None:
+            viejo.email = "produccion@giscar.com"
+            # Se fija ya: sin esto la siembra no vería el correo renombrado
+            # (autoflush está apagado) e intentaría crear un segundo usuario.
+            db.commit()
         for item in SEEDS:
             exists = db.query(UserRow).filter(UserRow.email == item["email"]).first()
             if exists:

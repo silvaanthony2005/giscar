@@ -18,7 +18,7 @@ interface Paso {
 const PASOS: Paso[] = [
   { estado: 'pendiente', titulo: 'Recibido de Ventas', icono: 'inbox' },
   { estado: 'en_planificacion', titulo: 'Plan técnico', icono: 'account_tree' },
-  { estado: 'en_desarrollo', titulo: 'En desarrollo', icono: 'code' },
+  { estado: 'en_desarrollo', titulo: 'En Producción', icono: 'code' },
   { estado: 'completado', titulo: 'Completado', icono: 'check_circle' },
   { estado: 'enviado_despacho', titulo: 'En Despacho', icono: 'local_shipping' },
 ]
@@ -68,7 +68,7 @@ export function FlujoProyecto({ estado }: { estado: string }) {
                 >
                   {p.titulo}
                 </span>
-                <span className="block text-label-sm text-outline">
+                <span className="block text-label-sm text-on-surface-variant">
                   {hecho
                     ? traspasado && i === PASOS.length - 1
                       ? 'Traspasado'

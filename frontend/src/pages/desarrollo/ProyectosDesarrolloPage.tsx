@@ -47,8 +47,8 @@ export function ProyectosDesarrolloPage() {
   return (
     <div className="p-6">
       <PageHeader
-        breadcrumb={['Desarrollo', 'Proyectos']}
-        title="Proyectos de Desarrollo"
+        breadcrumb={['Producción', 'Proyectos']}
+        title="Proyectos de Producción"
         subtitle="Planes técnicos, fases, personas asignadas y seguimiento de avance."
       />
 
@@ -71,14 +71,14 @@ export function ProyectosDesarrolloPage() {
       <Section
         icon="code"
         title="En curso"
-        description="Proyectos en planificación o en desarrollo activo."
+        description="Proyectos en planificación o en producción activa."
         count={enCurso.length}
-        emptyText="No hay proyectos en desarrollo"
+        emptyText="No hay proyectos en producción"
       >
         <DataTable
           rows={enCurso}
           keyOf={(p) => p.id}
-          empty="No hay proyectos en desarrollo"
+          empty="No hay proyectos en producción"
           onRowClick={goTo}
           columns={columns}
         />
