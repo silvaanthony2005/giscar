@@ -113,7 +113,8 @@ frontend/src/
   destinatario, detalle_entregado, notas, confirmado_por.
 - **incidents**: id, codigo, titulo, descripcion, reportado_por, departamento_origen,
   equipo_afectado, prioridad (`baja|media|alta|critica`), estado (`abierta|en_proceso|resuelta|
-  cerrada`), orden_llegada, asignado_a, timestamps.
+  cerrada`), orden_llegada, timestamps.
+- **incident_assignees**: id, incident_id, user_id. Varios técnicos por incidencia.
 - **incident_reports**: id, incident_id, user_id, diagnostico, solucion, tiempo_resolucion, fecha.
 - **attachments**: id, entidad_tipo, entidad_id, nombre, ruta, mime, tamano, subido_por, fecha.
 - **audit_logs**: id, user_id, accion, entidad_tipo, entidad_id, detalles, ip, fecha.

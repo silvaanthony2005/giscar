@@ -12,6 +12,8 @@ Sistema de información interno para empleados (25–100 usuarios), corriendo en
 
 > Requisitos originales del cliente: [`readme.md`](readme.md)
 > Decisiones técnicas y convenciones obligatorias: [`AGENTS.md`](AGENTS.md)
+> Documentación técnica (arquitectura, backend, frontend, BD, API, seguridad y flujos):
+> [`docs/`](docs/README.md)
 
 ---
 
@@ -150,7 +152,7 @@ npm run lint     # oxlint (frontend) + ruff (backend)
 npm run test     # pytest (backend)
 ```
 
-Estado esperado: **110 passed**, ruff y oxlint sin errores, build correcto.
+Estado esperado: **187 passed**, ruff y oxlint sin errores, build correcto.
 
 ---
 
@@ -184,7 +186,7 @@ rm -f giscar.db giscar.db-wal giscar.db-shm
 uv run python -m app.infrastructure.db.seed
 ```
 
-Esto borra **todos** los datos (clientes, proyectos, pagos, incidencias), recrea el esquema completo (16 tablas) y las 5 cuentas semilla.
+Esto borra **todos** los datos (clientes, proyectos, pagos, incidencias), recrea el esquema completo (17 tablas) y las 5 cuentas semilla.
 
 ---
 
