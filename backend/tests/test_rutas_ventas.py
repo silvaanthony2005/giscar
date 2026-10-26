@@ -5,6 +5,7 @@ todos los datos del cliente son obligatorios.
 """
 
 import pytest
+from fastapi.routing import APIRoute
 from pydantic import ValidationError
 
 from app.infrastructure.api import schemas_ventas as s
@@ -42,3 +43,26 @@ def test_el_alta_de_cliente_exige_todos_los_datos():
     # Sin dirección el alta no pasa: el cliente obliga a completar el formulario.
     with pytest.raises(ValidationError):
         s.CreateCustomerRequest(**{**body, "direccion": ""})
+
+
+def test_editar_cliente_acepta_correo_vacio_para_borrarlo():
+    """La edición envía el registro completo: '' viaja al dominio, que lo borra."""
+    assert s.UpdateCustomerRequest(email="").email == ""
+    assert s.UpdateCustomerRequest(email="ana@acme.com").email == "ana@acme.com"
+    with pytest.raises(ValidationError):
+        s.UpdateCustomerRequest(email="no-es-correo")
+
+
+def _ruta(method: str, path: str) -> None:
+    encontradas = [
+        r
+        for r in ventas.router.routes
+        if isinstance(r, APIRoute) and r.path == path and method in r.methods
+    ]
+    assert len(encontradas) == 1, f"{method} {path}"
+
+
+def test_editar_y_eliminar_cliente_estan_declarados():
+    """El frontend pinta Ver/Editar/Eliminar: las dos rutas tienen que existir."""
+    _ruta("PATCH", "/api/ventas/clientes/{cid}")
+    _ruta("DELETE", "/api/ventas/clientes/{cid}")

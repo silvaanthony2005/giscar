@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, EmailStr, Field
 
@@ -19,9 +20,11 @@ class CreateCustomerRequest(BaseModel):
 
 class UpdateCustomerRequest(BaseModel):
     nombre: str | None = Field(default=None, min_length=1, max_length=255)
-    documento: str | None = None
-    telefono: str | None = None
-    email: EmailStr | None = None
+    representante: str | None = Field(default=None, min_length=1, max_length=255)
+    documento: str | None = Field(default=None, max_length=50)
+    telefono: str | None = Field(default=None, max_length=50)
+    # '' significa "borrar el correo": el formulario reenvía el registro completo.
+    email: EmailStr | Literal[""] | None = None
     direccion: str | None = None
     notas: str | None = None
 

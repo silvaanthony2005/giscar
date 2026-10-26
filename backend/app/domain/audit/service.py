@@ -17,6 +17,7 @@ ACCIONES = {
     "usuario_bloqueado",
     "usuario_desbloqueado",
     "departamento_cambiado",
+    "cliente_eliminado",
     "proyecto_creado",
     "pago_registrado",
     "factura_emitida",

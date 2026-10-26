@@ -53,6 +53,12 @@ class CustomerRepository:
         self._db.flush()
         return customer
 
+    def delete(self, customer: Customer) -> None:
+        row = self._db.get(CustomerRow, customer.id)
+        if row is not None:
+            self._db.delete(row)
+            self._db.flush()
+
 
 class ProjectRepository:
     def __init__(self, db: Session) -> None:

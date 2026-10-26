@@ -14,6 +14,17 @@ def _requerido(valor: str | None, codigo: str, mensaje: str) -> DomainError | No
     return None if (valor or "").strip() else DomainError(codigo, mensaje)
 
 
+def normalizar_telefono(valor: str | None) -> str | None:
+    """El teléfono se guarda con dígitos solamente: '809-555 0001' -> '8095550001'.
+
+    None si el dato viene vacío o si contiene letras u otros símbolos.
+    """
+    if valor is None:
+        return None
+    limpio = "".join(ch for ch in valor.strip() if ch not in " -()+.")
+    return limpio if limpio.isdigit() else None
+
+
 def create_customer(
     *,
     id: str,
@@ -47,13 +58,21 @@ def create_customer(
     ]
     if faltantes:
         return Err(faltantes[0])
+    telefono_limpio = normalizar_telefono(telefono)
+    if telefono_limpio is None:
+        return Err(
+            DomainError(
+                "customer.telefono_invalido",
+                "El número telefónico solo puede contener números",
+            )
+        )
     return Ok(
         Customer(
             id=id,
             nombre=nombre.strip(),
             representante=representante.strip(),
             documento=documento.strip(),
-            telefono=telefono.strip(),
+            telefono=telefono_limpio,
             email=email,
             direccion=direccion.strip(),
             notas=notas,
@@ -68,6 +87,7 @@ def update_customer(
     customer: Customer,
     *,
     nombre: str | None = None,
+    representante: str | None = None,
     documento: str | None = None,
     telefono: str | None = None,
     email: str | None = None,
@@ -76,17 +96,52 @@ def update_customer(
     now: datetime,
 ) -> Result[Customer, DomainError]:
     changes: dict[str, object] = {"updated_at": now}
-    if nombre is not None:
-        if not nombre.strip():
-            return Err(DomainError("customer.nombre_vacio", "El nombre no puede estar vacío"))
-        changes["nombre"] = nombre.strip()
+    for field, value, codigo, mensaje in (
+        ("nombre", nombre, "customer.nombre_vacio", "El nombre no puede estar vacío"),
+        (
+            "representante",
+            representante,
+            "customer.representante_vacio",
+            "El representante no puede estar vacío",
+        ),
+    ):
+        if value is not None:
+            if not value.strip():
+                return Err(DomainError(codigo, mensaje))
+            changes[field] = value.strip()
+    if telefono is not None:
+        limpio = normalizar_telefono(telefono)
+        if limpio is None:
+            if telefono.strip():
+                return Err(
+                    DomainError(
+                        "customer.telefono_invalido",
+                        "El número telefónico solo puede contener números",
+                    )
+                )
+            # Cadena vacía = borrar el dato: el formulario envía el registro completo.
+            changes["telefono"] = None
+        else:
+            changes["telefono"] = limpio
     for field, value in (
         ("documento", documento),
-        ("telefono", telefono),
         ("email", email),
         ("direccion", direccion),
         ("notas", notas),
     ):
         if value is not None:
-            changes[field] = value
+            # Cadena vacía = borrar el dato: el formulario envía el registro completo.
+            changes[field] = value.strip() or None
     return Ok(replace(customer, **changes))  # type: ignore[arg-type]
+
+
+def puede_eliminar(customer: Customer, tiene_proyectos: bool) -> Result[Customer, DomainError]:
+    """No se borra un cliente con proyectos: sus expedientes cuelgan de él."""
+    if tiene_proyectos:
+        return Err(
+            DomainError(
+                "customer.con_proyectos",
+                "El cliente tiene proyectos registrados; no puede eliminarse",
+            )
+        )
+    return Ok(customer)

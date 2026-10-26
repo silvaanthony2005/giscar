@@ -73,6 +73,23 @@ export function useCreateCustomer() {
   })
 }
 
+export function useUpdateCustomer() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: unknown }) =>
+      api.patch<Customer>(`/ventas/clientes/${id}`, body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: [Q, 'clientes'] }),
+  })
+}
+
+export function useDeleteCustomer() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => api.delete<void>(`/ventas/clientes/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: [Q, 'clientes'] }),
+  })
+}
+
 export function useProjects() {
   return useQuery({ queryKey: [Q, 'proyectos'], queryFn: () => api.get<Project[]>('/ventas/proyectos') })
 }

@@ -130,6 +130,7 @@ def update_customer(cid: str, body: s.UpdateCustomerRequest, db: DbSession, user
     result = customer_service.update_customer(
         existing,
         nombre=body.nombre,
+        representante=body.representante,
         documento=body.documento,
         telefono=body.telefono,
         email=body.email,
@@ -142,6 +143,25 @@ def update_customer(cid: str, body: s.UpdateCustomerRequest, db: DbSession, user
     saved = repo.update(result.unwrap())
     db.commit()
     return _customer_out(saved)
+
+
+@router.delete("/clientes/{cid}", status_code=204)
+def delete_customer(cid: str, db: DbSession, user=Depends(require_department(Departamento.VENTAS))):
+    repo = CustomerRepository(db)
+    existing = repo.get(cid)
+    if existing is None:
+        raise HTTPException(404, "Cliente no encontrado")
+    # El dominio decide: no se borra un cliente con proyectos registrados.
+    proyectos = [p for p in ProjectRepository(db).list_all() if p.customer_id == cid]
+    result = customer_service.puede_eliminar(existing, bool(proyectos))
+    if not result.is_ok():
+        raise HTTPException(422, result.error.message)
+    repo.delete(existing)
+    log_action(
+        db, accion="cliente_eliminado", user_id=user.id, user_email=user.email,
+        entidad_tipo="cliente", entidad_id=cid, detalle=existing.nombre,
+    )
+    db.commit()
 
 
 # --- Proyectos -------------------------------------------------------------
