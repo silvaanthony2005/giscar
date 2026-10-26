@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from app.domain.dispatch import service as dispatch_service
+from app.domain.invoice import service as invoice_service
 from app.domain.payment import service as payment_service
 from app.domain.payment.model import TipoPago
 from app.domain.project import service as project_service
@@ -19,6 +20,7 @@ from app.infrastructure.db.repositories.audit import log_action
 from app.infrastructure.db.repositories.despacho import DenialRepository, DispatchRepository
 from app.infrastructure.db.repositories.ventas import (
     CustomerRepository,
+    InvoiceRepository,
     PaymentRepository,
     ProjectRepository,
 )
@@ -50,6 +52,19 @@ def _payment_out(p) -> dict:
 def _contacto_escalado(valor: str | None, del_cliente: str | None) -> str | None:
     """Dato del levantamiento; si no, el del cliente; ninguno de los dos -> None."""
     return (valor or "").strip() or ((del_cliente or "").strip() or None)
+
+
+def _invoice_out(i) -> dict:
+    return {
+        "id": i.id,
+        "numero": i.numero,
+        "project_id": i.project_id,
+        "monto": i.monto.amount,
+        "porcentaje": i.porcentaje,
+        "metodo_pago": i.metodo_pago,
+        "descripcion": i.descripcion,
+        "emitida_en": i.emitida_en,
+    }
 
 
 def _project_out(p, pagado, customer=None):
@@ -131,6 +146,9 @@ def get_project(pid: str, db: DbSession, _: DespachoUser):
         "saldo": saldo.amount,
         "por_pagado": int(pagado.cents * 100 / p.monto_total.cents) if p.monto_total.cents else 0,
         "pagos": [_payment_out(pg) for pg in pagos],
+        "facturas": [
+            _invoice_out(i) for i in InvoiceRepository(db).list_by_project(pid)
+        ],
         "entrega": DispatchRepository(db).get_by_project(pid),
         "negacion": DenialRepository(db).get_by_project(pid),
     }
@@ -169,8 +187,36 @@ def _register_remaining_payment(db, pid: str, user: User, metodo_pago: str, nota
         ProjectRepository(db).update(updated)
 
     saved = PaymentRepository(db).add(result.unwrap())
+    log_action(
+        db, accion="pago_registrado", user_id=user.id, user_email=user.email,
+        entidad_tipo="proyecto", entidad_id=pid,
+        detalle=f"Liquidación {saved.monto.amount} ({saved.porcentaje}%)",
+    )
+
+    # La liquidación también se factura: mismo registro y PDF que en Ventas.
+    invoice_repo = InvoiceRepository(db)
+    cliente = CustomerRepository(db).get(updated.customer_id)
+    inv_result = invoice_service.create_invoice(
+        id=new_id(),
+        numero=invoice_service.next_numero(
+            (i.numero for i in invoice_repo.list_all()), year=_now().year
+        ),
+        payment=saved,
+        project=updated,
+        cliente_nombre=cliente.nombre if cliente else "—",
+        emitida_por=user.id,
+        emitida_en=_now(),
+    )
+    invoice = inv_result.unwrap() if inv_result.is_ok() else None
+    if invoice is not None:
+        invoice_repo.add(invoice)
+        log_action(
+            db, accion="factura_emitida", user_id=user.id, user_email=user.email,
+            entidad_tipo="factura", entidad_id=invoice.id, detalle=invoice.numero,
+        )
+
     db.commit()
-    return saved
+    return saved, invoice
 
 
 class RemainingPaymentIn(BaseModel):
@@ -180,13 +226,16 @@ class RemainingPaymentIn(BaseModel):
 
 @router.post("/proyectos/{pid}/liquidar", status_code=201)
 def liquidate(pid: str, body: RemainingPaymentIn, db: DbSession, user: DespachoUser):
-    payment = _register_remaining_payment(db, pid, user, body.metodo_pago, body.notas)
-    return {
+    payment, invoice = _register_remaining_payment(db, pid, user, body.metodo_pago, body.notas)
+    out = {
         "id": payment.id,
         "monto": payment.monto.amount,
         "porcentaje": payment.porcentaje,
         "tipo": payment.tipo.value,
     }
+    if invoice is not None:
+        out["factura"] = _invoice_out(invoice)
+    return out
 
 
 @router.post("/proyectos/{pid}/confirmar-entrega", response_model=s.DeliveryOut, status_code=201)

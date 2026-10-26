@@ -31,6 +31,11 @@ router = APIRouter(prefix="/api/ventas", tags=["ventas"])
 
 VentasUser = Annotated[User, Depends(require_department(Departamento.VENTAS))]
 
+# Despacho cobra la liquidación: también debe poder bajar el PDF de la factura.
+FacturaUser = Annotated[
+    User, Depends(require_department(Departamento.VENTAS, Departamento.DESPACHO))
+]
+
 
 def _now() -> datetime:
     return datetime.now(UTC)
@@ -288,7 +293,9 @@ def create_payment(pid: str, body: s.CreatePaymentRequest, db: DbSession, user=D
     cliente = CustomerRepository(db).get(project.customer_id)
     inv_result = invoice_service.create_invoice(
         id=new_id(),
-        numero=_next_factura(InvoiceRepository(db)),
+        numero=invoice_service.next_numero(
+            (i.numero for i in InvoiceRepository(db).list_all()), year=_now().year
+        ),
         payment=saved_payment,
         project=project,
         cliente_nombre=cliente.nombre if cliente else "—",
@@ -331,19 +338,8 @@ def _estado_por_pago(total: Money, pagado: Money) -> str:
     return "levantamiento"
 
 
-def _next_factura(repo: InvoiceRepository) -> str:
-    year = _now().year
-    prefijo = f"FAC-{year}-"
-    numeros = [
-        int(i.numero[len(prefijo):])
-        for i in repo.list_all()
-        if i.numero.startswith(prefijo) and i.numero[len(prefijo):].isdigit()
-    ]
-    return f"{prefijo}{max(numeros, default=0) + 1:05d}"
-
-
 @router.get("/facturas/{iid}/pdf")
-def download_invoice(iid: str, db: DbSession, _: VentasUser) -> Response:
+def download_invoice(iid: str, db: DbSession, _: FacturaUser) -> Response:
     invoice = InvoiceRepository(db).get(iid)
     if invoice is None:
         raise HTTPException(404, "Factura no encontrada")

@@ -2,12 +2,24 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from datetime import datetime
 
 from app.domain.invoice.model import Invoice, InvoiceSnapshot
 from app.domain.payment.model import Payment
 from app.domain.project.model import Project
 from app.domain.shared.types import DomainError, Err, Ok, Result
+
+
+def next_numero(existing: Iterable[str], *, year: int, prefix: str = "FAC") -> str:
+    """Siguiente número secuencial `FAC-YYYY-NNNNN` (ignora otros años/formatos)."""
+    year_prefix = f"{prefix}-{year}-"
+    numeros = [
+        int(n[len(year_prefix):])
+        for n in existing
+        if n.startswith(year_prefix) and n[len(year_prefix):].isdigit()
+    ]
+    return f"{year_prefix}{max(numeros, default=0) + 1:05d}"
 
 
 def snapshot_from_project(project: Project, cliente_nombre: str) -> InvoiceSnapshot:

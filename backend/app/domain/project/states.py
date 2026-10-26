@@ -11,7 +11,6 @@ from app.domain.shared.state_machine import StateMachine, Transition
 
 
 class EstadoVentas(StrEnum):
-    BORRADOR = "borrador"
     LEVANTAMIENTO = "levantamiento"
     COBRADO_50 = "cobrado_50"
     COBRADO_100 = "cobrado_100"
