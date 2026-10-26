@@ -52,6 +52,33 @@ def test_entrega_requiere_fecha():
     assert not _entrega(fecha_entrega=None).is_ok()
 
 
+def test_despacho_pendiente_de_cobro_si_queda_saldo():
+    from app.domain.project.model import Project
+
+    p = Project(
+        id="p1", codigo="PRJ-1", titulo="t", descripcion_detallada="d" * 25,
+        customer_id="c1", monto_total=Money.from_amount(100000),
+        contacto_nombre="n", contacto_telefono=None, contacto_email=None,
+        contacto_direccion=None, estado_ventas="cobrado_50",
+        estado_desarrollo="completado", estado_despacho="pendiente",
+        created_by="u1", created_at=NOW, updated_at=NOW,
+    )
+    result = project_service.puede_pasar_a_despacho(p, Money.from_amount(50000))
+    assert result.is_ok()
+    assert result.unwrap().estado_despacho == "pendiente_cobro"  # type: ignore[union-attr]
+
+
+def test_estado_visible_corrige_proyectos_anteriores():
+    """Filas antiguas en 'pendiente_entrega' con saldo: se corrigen al iniciar la app.
+
+    shortcut: la corrección vive en la migración de `init_db`, no en el dominio;
+    si aparecen proyectos que se mueven sin pasar por `puede_pasar_a_despacho`,
+    mover esta regla al dominio.
+    """
+    assert "pendiente_cobro" in DESPACHO_SM.allowed_targets("pendiente")
+    assert "pendiente_entrega" in DESPACHO_SM.allowed_targets("pendiente_cobro")
+
+
 # --- Despacho: máquina de estados ---
 
 
@@ -121,6 +148,21 @@ def test_transicion_incidencia():
     cerrada = incidence_service.transition_incidence(resuelta.unwrap(), "cerrada", now=NOW)  # type: ignore[union-attr]
     assert cerrada.is_ok()
     assert not incidence_service.transition_incidence(cerrada.unwrap(), "abierta", now=NOW).is_ok()
+
+
+def test_asignar_varios_tecnicos():
+    inc = _incidencia().unwrap()  # type: ignore[union-attr]
+    r = incidence_service.assign_incidence(inc, ["u1", "u2", "u1"], now=NOW)
+    assert r.unwrap().asignados == ("u1", "u2")  # sin duplicados
+    # lista vacía = la incidencia queda sin responsables
+    assert incidence_service.assign_incidence(inc, [], now=NOW).unwrap().asignados == ()  # type: ignore[union-attr]
+
+
+def test_asignar_incidencia_cerrada_falla():
+    inc = _incidencia().unwrap()  # type: ignore[union-attr]
+    for target in ("en_proceso", "resuelta", "cerrada"):
+        inc = incidence_service.transition_incidence(inc, target, now=NOW).unwrap()  # type: ignore[union-attr]
+    assert not incidence_service.assign_incidence(inc, ["u1"], now=NOW).is_ok()
 
 
 def test_cola_ordena_por_prioridad_y_llegada():

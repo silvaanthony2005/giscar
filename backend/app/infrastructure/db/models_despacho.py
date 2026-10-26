@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import date, datetime
 
 from sqlalchemy import Date, DateTime, ForeignKey, Integer, String, Text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.infrastructure.db.models import new_id, utcnow
 from app.infrastructure.db.session import Base
@@ -49,9 +49,21 @@ class IncidentRow(Base):
     estado: Mapped[str] = mapped_column(String(20), default="abierta")
     orden_llegada: Mapped[int] = mapped_column(Integer)
     reportado_por: Mapped[str] = mapped_column(String(32), ForeignKey("users.id"))
+    # Heredada de la asignación única; los responsables viven en incident_assignees.
     asignado_a: Mapped[str | None] = mapped_column(String(32), ForeignKey("users.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    assignees: Mapped[list[IncidentAssigneeRow]] = relationship(
+        cascade="all, delete-orphan", lazy="selectin"
+    )
+
+
+class IncidentAssigneeRow(Base):
+    __tablename__ = "incident_assignees"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    incident_id: Mapped[str] = mapped_column(String(32), ForeignKey("incidents.id"), index=True)
+    user_id: Mapped[str] = mapped_column(String(32), ForeignKey("users.id"), index=True)
 
 
 class IncidentReportRow(Base):

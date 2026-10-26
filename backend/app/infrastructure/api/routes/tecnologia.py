@@ -72,10 +72,14 @@ def _incidence_out(inc, users: dict[str, User]) -> dict:
         "reportado_por_nombre": users.get(inc.reportado_por).nombre
         if inc.reportado_por in users
         else None,
-        "asignado_a": inc.asignado_a,
-        "asignado_a_nombre": users.get(inc.asignado_a).nombre
-        if inc.asignado_a and inc.asignado_a in users
-        else None,
+        "asignados": [
+            {
+                "user_id": uid,
+                "nombre": users[uid].nombre if uid in users else None,
+                "cargo": users[uid].cargo if uid in users else None,
+            }
+            for uid in inc.asignados
+        ],
         "created_at": inc.created_at,
     }
 
@@ -142,20 +146,30 @@ def get_incidence(iid: str, db: DbSession, _: TecnologiaUser):
     }
 
 
+def _error_asignacion(users: dict[str, User], user_ids: list[str]) -> tuple[int, str] | None:
+    """Rechaza técnicos inexistentes o de otro departamento (la regla vive aquí, no en la UI)."""
+    if any(uid not in users for uid in user_ids):
+        return 404, "Usuario no encontrado"
+    if any(users[uid].departamento != Departamento.TECNOLOGIA for uid in user_ids):
+        return 422, "Solo se puede asignar personal de Tecnología"
+    return None
+
+
 @router.post("/incidencias/{iid}/asignar")
 def assign(iid: str, body: s.AssignRequest, db: DbSession, _: TecnologiaUser):
     repo = IncidentRepository(db)
     inc = repo.get(iid)
     if inc is None:
         raise HTTPException(404, "Incidencia no encontrada")
-    if UserRepository(db).get_by_id(body.user_id) is None:
-        raise HTTPException(404, "Usuario no encontrado")
-    result = incidence_service.assign_incidence(inc, body.user_id, now=_now())
+    users = {u.id: u for u in UserRepository(db).list_all()}
+    error = _error_asignacion(users, body.user_ids)
+    if error is not None:
+        raise HTTPException(*error)
+    result = incidence_service.assign_incidence(inc, body.user_ids, now=_now())
     if not result.is_ok():
         raise HTTPException(422, result.error.message)
     saved = repo.update(result.unwrap())
     db.commit()
-    users = {u.id: u for u in UserRepository(db).list_all()}
     return _incidence_out(saved, users)
 
 
@@ -214,4 +228,4 @@ def resolve_with_report(iid: str, body: s.IncidentReportIn, db: DbSession, user:
 @router.get("/tecnicos", response_model=list[dict])
 def list_tecnicos(db: DbSession, _: TecnologiaUser):
     users = UserRepository(db).list_all(Departamento.TECNOLOGIA)
-    return [{"id": u.id, "nombre": u.nombre} for u in users]
+    return [{"id": u.id, "nombre": u.nombre, "cargo": u.cargo} for u in users]

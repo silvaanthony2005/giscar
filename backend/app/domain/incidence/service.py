@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import replace
 from datetime import datetime
 from functools import reduce
@@ -64,7 +65,7 @@ def create_incidence(
             estado=EstadoIncidencia.ABIERTA.value,
             orden_llegada=orden_llegada,
             reportado_por=reportado_por,
-            asignado_a=None,
+            asignados=(),
             created_at=now,
             updated_at=now,
         )
@@ -93,11 +94,12 @@ def transition_incidence(
 
 
 def assign_incidence(
-    incidence: Incidence, user_id: str, *, now: datetime
+    incidence: Incidence, user_ids: Sequence[str], *, now: datetime
 ) -> Result[Incidence, DomainError]:
     if incidence.estado == EstadoIncidencia.CERRADA.value:
         return Err(DomainError("incidencia.cerrada", "No se puede asignar una incidencia cerrada"))
-    return Ok(replace(incidence, asignado_a=user_id, updated_at=now))
+    # Sin duplicados y en el orden elegido. Lista vacía = sin técnicos responsables.
+    return Ok(replace(incidence, asignados=tuple(dict.fromkeys(user_ids)), updated_at=now))
 
 
 def create_report(

@@ -13,9 +13,20 @@ export interface Incidencia {
   orden_llegada: number
   reportado_por: string
   reportado_por_nombre: string | null
-  asignado_a: string | null
-  asignado_a_nombre: string | null
+  asignados: Asignado[]
   created_at: string
+}
+
+export interface Tecnico {
+  id: string
+  nombre: string
+  cargo: string | null
+}
+
+export interface Asignado {
+  user_id: string
+  nombre: string | null
+  cargo: string | null
 }
 
 export interface ReporteResolucion {
@@ -80,7 +91,8 @@ export function useCambiarEstadoIncidencia(iid: string) {
 export function useAsignarIncidencia(iid: string) {
   const refresh = useRefresh(iid)
   return useMutation({
-    mutationFn: (user_id: string) => api.post(`/tecnologia/incidencias/${iid}/asignar`, { user_id }),
+    mutationFn: (user_ids: string[]) =>
+      api.post(`/tecnologia/incidencias/${iid}/asignar`, { user_ids }),
     onSuccess: refresh,
   })
 }
@@ -96,7 +108,7 @@ export function useResolverIncidencia(iid: string) {
 export function useTecnicos() {
   return useQuery({
     queryKey: [Q, 'tecnicos'],
-    queryFn: () => api.get<{ id: string; nombre: string }[]>('/tecnologia/tecnicos'),
+    queryFn: () => api.get<Tecnico[]>('/tecnologia/tecnicos'),
     retry: false,
   })
 }

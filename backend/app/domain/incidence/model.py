@@ -33,7 +33,7 @@ class Incidence:
     estado: str
     orden_llegada: int
     reportado_por: str
-    asignado_a: str | None
+    asignados: tuple[str, ...]
     created_at: datetime
     updated_at: datetime
 

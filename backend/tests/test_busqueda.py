@@ -123,7 +123,7 @@ def _incidencia(**kw) -> Incidence:
         estado="abierta",
         orden_llegada=1,
         reportado_por="u1",
-        asignado_a=None,
+        asignados=(),
         created_at=NOW,
         updated_at=NOW,
     )

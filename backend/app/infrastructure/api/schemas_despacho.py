@@ -55,6 +55,12 @@ class CreateIncidenceRequest(BaseModel):
     prioridad: str = Field(pattern="^(baja|media|alta|critica)$")
 
 
+class AsignadoOut(BaseModel):
+    user_id: str
+    nombre: str | None = None
+    cargo: str | None = None
+
+
 class IncidenceOut(BaseModel):
     id: str
     codigo: str
@@ -67,8 +73,7 @@ class IncidenceOut(BaseModel):
     orden_llegada: int
     reportado_por: str
     reportado_por_nombre: str | None = None
-    asignado_a: str | None
-    asignado_a_nombre: str | None = None
+    asignados: list[AsignadoOut] = Field(default_factory=list)
     created_at: datetime
 
 
@@ -77,7 +82,7 @@ class IncidenceStateRequest(BaseModel):
 
 
 class AssignRequest(BaseModel):
-    user_id: str
+    user_ids: list[str] = Field(default_factory=list)
 
 
 class IncidentReportIn(BaseModel):

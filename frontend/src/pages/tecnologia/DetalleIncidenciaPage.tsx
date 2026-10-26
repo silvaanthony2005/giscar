@@ -10,6 +10,7 @@ import {
 import { Button } from '../../atoms/Button'
 import { Badge } from '../../atoms/Badge'
 import { Card } from '../../atoms/Card'
+import { Checkbox } from '../../atoms/Checkbox'
 import { Icon } from '../../atoms/Icon'
 import { Input } from '../../atoms/Input'
 import { Textarea } from '../../atoms/Textarea'
@@ -33,7 +34,11 @@ const dt = 'text-label-md font-semibold tracking-wide text-on-surface-variant up
 export function DetalleIncidenciaPage() {
   const { id = '' } = useParams()
   const { data: inc, isLoading, error } = useIncidencia(id)
-  const { data: tecnicos } = useTecnicos()
+  const {
+    data: tecnicos,
+    isLoading: tecnicosLoading,
+    error: tecnicosError,
+  } = useTecnicos()
   const cambiarEstado = useCambiarEstadoIncidencia(id)
   const asignar = useAsignarIncidencia(id)
   const resolver = useResolverIncidencia(id)
@@ -45,9 +50,16 @@ export function DetalleIncidenciaPage() {
     tiempo_resolucion_horas: 1,
   })
   const [msg, setMsg] = useState<string | null>(null)
+  const [showAsignar, setShowAsignar] = useState(false)
+  const [sel, setSel] = useState<string[]>([])
 
   if (isLoading) return <LoadingState />
   if (error || !inc) return <ErrorState message={error?.message ?? 'Incidencia no encontrada'} />
+
+  const onAbrirAsignar = () => {
+    setSel(inc.asignados.map((a) => a.user_id))
+    setShowAsignar(true)
+  }
 
   const onResolver = (e: FormEvent) => {
     e.preventDefault()
@@ -120,40 +132,38 @@ export function DetalleIncidenciaPage() {
         </Card>
 
         <Card className="p-space-xl">
-          <SectionHeader
-            icon="engineering"
-            title="Asignación"
-            description="Técnico responsable."
-          />
-          <p className="mb-space-md text-body-md text-on-surface-variant">
-            {inc.asignado_a_nombre ? (
-              <>
-                Asignada a{' '}
-                <strong className="text-on-surface">{inc.asignado_a_nombre}</strong>
-              </>
-            ) : (
-              'Sin asignar'
+          <div className="flex items-start justify-between gap-space-md">
+            <SectionHeader
+              icon="engineering"
+              title="Asignación"
+              description="Técnicos responsables."
+            />
+            {inc.estado !== 'cerrada' && (
+              <Button size="sm" variant="tonal" icon="person_add" onClick={onAbrirAsignar}>
+                Asignar
+              </Button>
             )}
-          </p>
-          {(tecnicos ?? []).length > 0 && (
-            <div className="flex flex-wrap gap-space-sm">
-              {(tecnicos ?? []).map((t) => (
-                <Button
-                  key={t.id}
-                  size="sm"
-                  variant={inc.asignado_a === t.id ? 'primary' : 'tonal'}
-                  loading={asignar.isPending && asignar.variables === t.id}
-                  onClick={() => asignar.mutate(t.id)}
+          </div>
+          {inc.asignados.length > 0 ? (
+            <ul className="space-y-space-xs">
+              {inc.asignados.map((a) => (
+                <li
+                  key={a.user_id}
+                  className="flex items-center gap-space-sm rounded-lg px-space-sm py-1.5"
                 >
-                  {t.nombre}
-                </Button>
+                  <span className="min-w-0">
+                    <span className="block truncate text-body-md text-on-surface">
+                      {a.nombre ?? '—'}
+                    </span>
+                    <span className="block text-label-sm text-on-surface-variant">
+                      {a.cargo ?? 'Tecnología'}
+                    </span>
+                  </span>
+                </li>
               ))}
-            </div>
-          )}
-          {asignar.error && (
-            <p className="mt-space-sm text-body-md text-on-error-container">
-              {asignar.error.message}
-            </p>
+            </ul>
+          ) : (
+            <p className="text-body-md text-on-surface-variant">Sin técnicos asignados aún.</p>
           )}
         </Card>
       </div>
@@ -244,6 +254,60 @@ export function DetalleIncidenciaPage() {
             Guardar y resolver
           </Button>
         </form>
+      </Modal>
+
+      <Modal open={showAsignar} onClose={() => setShowAsignar(false)} title="Asignar técnicos">
+        <p className="text-body-md text-on-surface-variant">
+          Selecciona las personas responsables de la incidencia.
+        </p>
+        {tecnicosLoading && (
+          <p className="mt-space-md text-body-md text-on-surface-variant">Cargando equipo…</p>
+        )}
+        {tecnicosError && (
+          <p role="alert" className="mt-space-md text-body-md text-on-error-container">
+            {tecnicosError.message}
+          </p>
+        )}
+        {tecnicos && tecnicos.length === 0 && (
+          <p className="mt-space-md text-body-md text-on-surface-variant">
+            No hay técnicos disponibles para asignar.
+          </p>
+        )}
+        {tecnicos && tecnicos.length > 0 && (
+          <ul className="mt-space-md max-h-80 space-y-1 overflow-y-auto">
+            {tecnicos.map((t) => (
+              <li key={t.id}>
+                <Checkbox
+                  label={t.nombre}
+                  sublabel={t.cargo ?? 'Tecnología'}
+                  checked={sel.includes(t.id)}
+                  onChange={() =>
+                    setSel((prev) =>
+                      prev.includes(t.id) ? prev.filter((x) => x !== t.id) : [...prev, t.id],
+                    )
+                  }
+                />
+              </li>
+            ))}
+          </ul>
+        )}
+        {asignar.error && (
+          <p role="alert" className="mt-space-md text-body-md text-on-error-container">
+            {asignar.error.message}
+          </p>
+        )}
+        <div className="mt-space-lg flex justify-end gap-space-sm">
+          <Button variant="secondary" onClick={() => setShowAsignar(false)}>
+            Cerrar
+          </Button>
+          <Button
+            loading={asignar.isPending}
+            icon="check"
+            onClick={() => asignar.mutate(sel, { onSuccess: () => setShowAsignar(false) })}
+          >
+            Guardar selección
+          </Button>
+        </div>
       </Modal>
 
       <p className="mt-space-xl text-body-md">

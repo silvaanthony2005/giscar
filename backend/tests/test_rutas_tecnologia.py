@@ -10,10 +10,11 @@ rutas, igual que `test_rutas_adjuntos`.
 """
 
 import inspect
+from datetime import UTC, datetime
 
 from fastapi.routing import APIRoute
 
-from app.domain.user.model import Departamento
+from app.domain.user.model import Departamento, EstadoUsuario, User
 from app.infrastructure.api.routes import tecnologia
 
 RUTAS = [
@@ -51,3 +52,27 @@ def test_asignar_transicionar_y_resolver_solo_tecnologia():
         assert _permitidos(path, "POST" if not path.endswith("tecnicos") else "GET") == {
             Departamento.TECNOLOGIA
         }
+
+
+def _user(uid: str, depto: Departamento) -> User:
+    now = datetime(2026, 1, 1, tzinfo=UTC)
+    return User(
+        id=uid, email=f"{uid}@x.com", password_hash="h", nombre=uid, documento=None,
+        telefono=None, direccion=None, cargo=None, departamento=depto,
+        estado=EstadoUsuario.ACTIVO, created_at=now, updated_at=now,
+    )
+
+
+def test_asignar_solo_acepta_personal_de_tecnologia():
+    """La regla se valida en el servidor, no solo filtrando la lista en el frontend."""
+    users = {
+        "t1": _user("t1", Departamento.TECNOLOGIA),
+        "v1": _user("v1", Departamento.VENTAS),
+    }
+    assert tecnologia._error_asignacion(users, []) is None
+    assert tecnologia._error_asignacion(users, ["t1"]) is None
+    assert tecnologia._error_asignacion(users, ["nadie"]) == (404, "Usuario no encontrado")
+    assert tecnologia._error_asignacion(users, ["t1", "v1"]) == (
+        422,
+        "Solo se puede asignar personal de Tecnología",
+    )
