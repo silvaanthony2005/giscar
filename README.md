@@ -152,7 +152,7 @@ npm run lint     # oxlint (frontend) + ruff (backend)
 npm run test     # pytest (backend)
 ```
 
-Estado esperado: **187 passed**, ruff y oxlint sin errores, build correcto.
+Estado esperado: **192 passed**, ruff y oxlint sin errores, build correcto.
 
 ---
 

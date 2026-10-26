@@ -147,7 +147,7 @@ registrar un email desconocido).
 | `id` | VARCHAR(32) PK | |
 | `numero` | VARCHAR(30) | **UNIQUE**, `FAC-YYYY-NNNNN` |
 | `project_id` | VARCHAR(32) FK `projects.id` | indexado |
-| `payment_id` | VARCHAR(32) FK `payments.id` | 1 factura por pago de Ventas |
+| `payment_id` | VARCHAR(32) FK `payments.id` | 1 factura por pago (Ventas o liquidación de Despacho) |
 | `monto` | INTEGER | centavos |
 | `porcentaje` | INTEGER | |
 | `metodo_pago` | VARCHAR(50) | |

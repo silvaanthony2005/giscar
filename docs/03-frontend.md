@@ -228,8 +228,8 @@ Reglas de estilo:
 - **Tableros**: `DataTable` para listados y tarjetas/columnas para colas.
 - **Detalle de proyecto (Producción)**: guía de pasos `FlujoProyecto`, plan/fases,
   miembros, avances, adjuntos, cancelación con informe.
-- **Detalle de Despacho**: datos de contacto, saldo, pagos, entrega, negación y
-  resolución.
+- **Detalle de Despacho**: datos de contacto, saldo, pagos, facturas descargables,
+  entrega, negación y resolución.
 - **Tecnología**: cola ordenada, prioridad, asignación múltiple, reporte de resolución y
   evidencias.
 - **RRHH**: KPIs, proyectos globales, usuarios (alta/edición/bloqueo/reasignación) y

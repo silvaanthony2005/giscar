@@ -299,7 +299,7 @@ Antes de actualizar en uso real: backup completo y prueba en una máquina/copia.
 
 ## 13. Checklist de despliegue
 
-- [ ] `npm run check` en verde (build + lint + 187 tests).
+- [ ] `npm run check` en verde (build + lint + 192 tests).
 - [ ] `GISCAR_JWT_SECRET` cambiado.
 - [ ] Contraseñas semilla cambiadas / cuentas demo desactivadas.
 - [ ] Backup inicial de la BD y `uploads/`.

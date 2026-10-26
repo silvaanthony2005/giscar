@@ -95,7 +95,8 @@ stateDiagram-v2
     cerrado --> [*]
 ```
 
-- `borrador` está definido en el enum pero **no se usa**.
+- No existe estado `borrador` ni guardado de borradores: el proyecto nace en
+  `levantamiento` cuando Ventas envía el formulario completo.
 - `cobrado_50` significa «hay algún pago parcial», no exactamente 50 %.
 - `cerrado` se alcanza al liquidar el saldo en Despacho (o al entregar si Ventas seguía
   en `enviado_desarrollo`).
@@ -313,8 +314,10 @@ sequenceDiagram
     D->>API: POST /proyectos/{id}/liquidar
     API->>DOM: create_payment(saldo) + ventas → cerrado
     API->>DOM: pendiente_cobro → pendiente_entrega
-    API->>DB: INSERT payment + UPDATE project
-    API-->>D: 201 (sin factura)
+    API->>DOM: create_invoice (snapshot)
+    API->>DB: INSERT payment + invoice + UPDATE project
+    API->>DB: audit pago + factura
+    API-->>D: 201 + factura (PDF descargable)
 
     D->>API: POST /proyectos/{id}/confirmar-entrega
     API->>DOM: puede_entregar (saldo 0)
@@ -456,7 +459,7 @@ flowchart TD
 
 1. Ve **Pendientes** y **Cerrados**.
 2. Abre el proyecto y contacta al cliente con los datos del levantamiento.
-3. Si hay saldo, «Liquidar saldo» (cobro total del resto).
+3. Si hay saldo, «Liquidar saldo» (cobro total del resto, genera factura PDF).
 4. Con saldo 0, «Confirmar entrega»: fecha, destinatario, detalle.
 5. Si el cliente rechaza, «Negar» con motivo y detalle.
 6. Una negación se puede resolver y volver a la cola.

@@ -15,7 +15,7 @@ backend/
     infrastructure/db/        # session, models*, mappers*, repositories/, seed
     infrastructure/security/  # password, jwt, deps
     infrastructure/storage/   # files
-  tests/                      # 187 tests
+  tests/                      # 192 tests
   pyproject.toml              # uv, ruff, mypy, pytest
 ```
 
@@ -202,6 +202,10 @@ Clasificación del tipo (en la ruta de Ventas):
 
 `create_invoice`: valida que el pago pertenezca al proyecto y que el monto sea > 0;
 construye la descripción `Cobro de proyecto {codigo} — {titulo} ({porcentaje}% del total)`.
+Se emite en Ventas con cada pago y en Despacho al liquidar el saldo restante.
+
+`next_numero(existing, year)`: calcula el siguiente `FAC-YYYY-NNNNN` ignorando otros años
+y formatos. Es puro y lo comparten ambas rutas.
 
 `invoice/pdf.py` genera bytes con reportlab:
 
@@ -319,7 +323,7 @@ Búsqueda global pura:
 | `auth` | `/api/auth` | Login público; gestión de usuarios solo RRHH |
 | `panel` | `/api/panel` | Cualquier autenticado (filtra por departamento) |
 | `buscar` | `/api/buscar` | Cualquier autenticado (filtra por departamento) |
-| `ventas` | `/api/ventas` | Ventas |
+| `ventas` | `/api/ventas` | Ventas (el PDF de factura también lo ve Despacho) |
 | `desarrollo` | `/api/desarrollo` | Desarrollo; adjuntos también Ventas/Despacho/Tecnología |
 | `despacho` | `/api/despacho` | Despacho |
 | `tecnologia` | `/api/tecnologia` | Reportar: todos; gestionar: Tecnología |
@@ -384,7 +388,9 @@ Los esquemas **no** se comparten con el dominio: son contratos de borde. Usan
 
 ## 8. Pruebas
 
-`backend/tests/` contiene **187 tests** que corren en ~1 s sin BD ni servidor:
+`backend/tests/` contiene **192 tests** que corren en ~2 s. La mayoría no toca BD ni
+servidor; hay un test de integración con SQLite en memoria que verifica la factura de la
+liquidación y la descarga del PDF:
 
 - dominio puro: `test_money`, `test_shared_types`, `test_state_and_hofs`,
   `test_user_domain`, `test_customer_domain`, `test_ventas_domain`,

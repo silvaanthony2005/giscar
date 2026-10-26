@@ -193,6 +193,9 @@ los calcula el dominio.
 | GET | `/proyectos/{pid}/facturas` | — | `InvoiceOut[]` |
 | GET | `/facturas/{iid}/pdf` | — | `application/pdf` |
 
+El PDF de factura está disponible para **Ventas y Despacho** (y RRHH): Despacho lo
+necesita para entregar la factura de la liquidación.
+
 Al registrar un pago, la ruta en una sola transacción:
 
 1. valida contra el saldo;
@@ -305,7 +308,7 @@ Se valida la transición **antes** de escribir y luego se guarda informe + estad
 |---|---|---|---|
 | GET | `/proyectos` | — | `{pendientes: [], cerrados: []}` |
 | GET | `/proyectos/{pid}` | — | detalle completo (cliente, pagos, entrega, negación, `por_pagado`) |
-| POST | `/proyectos/{pid}/liquidar` | `{metodo_pago, notas?}` | `201 {id, monto, porcentaje, tipo}` |
+| POST | `/proyectos/{pid}/liquidar` | `{metodo_pago, notas?}` | `201 {id, monto, porcentaje, tipo, factura}` |
 | POST | `/proyectos/{pid}/confirmar-entrega` | `DeliveryIn` | `201 DeliveryOut` |
 | POST | `/proyectos/{pid}/negar` | `{motivo, detalle}` (detalle ≥ 15) | `201 DenialOut` |
 | POST | `/proyectos/{pid}/resolver-negacion` | — | `{estado_despacho}` |
@@ -326,8 +329,11 @@ Se valida la transición **antes** de escribir y luego se guarda informe + estad
 Comportamiento:
 
 - `liquidar` cobra **todo el saldo** (no acepta importe parcial), crea `Payment` tipo
-  `liquidacion`, cierra Ventas (`cerrado`) y pasa Despacho de `pendiente_cobro` a
-  `pendiente_entrega`. **No emite factura.**
+  `liquidacion`, **emite la factura** `FAC-YYYY-NNNNN` (registro + PDF), cierra Ventas
+  (`cerrado`) y pasa Despacho de `pendiente_cobro` a `pendiente_entrega`. La respuesta
+  incluye `factura` con los datos del documento.
+- `GET /proyectos/{pid}` incluye `facturas[]`, para que Despacho liste y descargue los
+  anticipos y la liquidación.
 - `confirmar-entrega` exige saldo 0; guarda el acta interna y marca `entregado`.
 - `negar` pasa a `negado` con motivo/detalle.
 - `resolver-negacion` vuelve a `pendiente_cobro` o `pendiente_entrega` según saldo.

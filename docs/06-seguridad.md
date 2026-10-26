@@ -129,6 +129,7 @@ propietario: **todo el departamento ve todo su módulo**.
 | `/api/auth/me`, `/api/panel`, `/api/buscar` | ✅ | ✅ | ✅ | ✅ | ✅ |
 | `/api/auth/usuarios` (gestión) | ❌ | ❌ | ❌ | ❌ | ✅ |
 | `/api/ventas/*` | ✅ | ❌ | ❌ | ❌ | ✅* |
+| `/api/ventas/facturas/{id}/pdf` | ✅ | ❌ | ✅ | ❌ | ✅ |
 | `/api/desarrollo/*` | ❌ | ✅ | ❌ | ❌ | ✅* |
 | `/api/desarrollo/adjuntos/*` | ✅ | ✅ | ✅ | ✅ | ✅ |
 | `/api/despacho/*` | ❌ | ❌ | ✅ | ❌ | ✅* |

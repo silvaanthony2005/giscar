@@ -198,8 +198,6 @@ Detalles:
 | RRHH | `User.can_access()` deja pasar a RRHH por cualquier `require_department` | RRHH tiene acceso **de escritura** por API a todos los módulos, no solo lectura |
 | Migraciones | `Base.metadata.create_all` + `ALTER TABLE` ad-hoc en `init_db` | No hay Alembic; los cambios de esquema requieren parches manuales e idempotentes |
 | Rate limiting | No implementado | El login no limita intentos |
-| Facturación en Despacho | La liquidación crea `Payment` pero **no** `Invoice` | Solo los cobros de Ventas generan factura PDF |
-| `EstadoVentas.BORRADOR` | Definido pero nunca alcanzado | Código muerto conceptual |
 | `frontend/src/App.tsx` | Resto del template de Vite, no se importa | Archivo huérfano; `main.tsx` usa `src/app/App.tsx` |
 | Tests de frontend | No hay framework configurado | Solo typecheck + oxlint + build |
 | Concurrencia | SQLite WAL + `busy_timeout=5000` | Suficiente para un PC; escrituras concurrentes se serializan |
