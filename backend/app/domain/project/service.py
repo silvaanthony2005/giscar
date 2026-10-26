@@ -111,7 +111,7 @@ def puede_pasar_a_desarrollo(project: Project, pagado: Money) -> Result[Project,
     return set_estado_ventas(project, "enviado_desarrollo", now=project.updated_at)
 
 
-def puede_pasar_a_despacho(project: Project) -> Result[Project, DomainError]:
+def puede_pasar_a_despacho(project: Project, pagado: Money) -> Result[Project, DomainError]:
     if project.estado_desarrollo != "completado":
         return Err(
             DomainError(
@@ -122,12 +122,25 @@ def puede_pasar_a_despacho(project: Project) -> Result[Project, DomainError]:
     result = set_estado_desarrollo(project, "enviado_despacho", now=project.updated_at)
     if not result.is_ok():
         return result
-    # Al llegar a Despacho entra directamente en 'pendiente_entrega'
+    # Al llegar a Despacho espera el cobro del resto o la entrega, según el saldo.
     arrived = result.unwrap()  # type: ignore[union-attr]
-    tr = set_estado_despacho(arrived, "pendiente_entrega", now=arrived.updated_at)
+    saldo = saldo_restante(project.monto_total, pagado)
+    tr = set_estado_despacho(arrived, estado_espera_despacho(saldo), now=arrived.updated_at)
     if not tr.is_ok():
         return tr
     return Ok(replace(arrived, estado_despacho=tr.unwrap().estado_despacho))  # type: ignore[arg-type]
+
+
+def estado_espera_despacho(saldo: Money) -> str:
+    """Estado de espera en Despacho: primero se cobra lo que falta, luego se entrega."""
+    return "pendiente_cobro" if saldo.cents > 0 else "pendiente_entrega"
+
+
+def tras_liquidar(project: Project, *, now: datetime) -> Result[Project, DomainError]:
+    """Cobrado el resto, la espera pasa de 'pendiente_cobro' a 'pendiente_entrega'."""
+    if project.estado_despacho != "pendiente_cobro":
+        return Ok(project)
+    return set_estado_despacho(project, "pendiente_entrega", now=now)
 
 
 def puede_entregar(project: Project, pagado: Money, saldo: Money) -> Result[Project, DomainError]:
@@ -271,14 +284,19 @@ def activos_desarrollo(projects: Iterable[Project]) -> int:
     )
 
 
+# Estados de Despacho que el tablero sigue mostrando aunque Desarrollo ya no esté en curso.
+_ALCANCE_DESPACHO = frozenset({"pendiente_cobro", "pendiente_entrega", "negado", "entregado"})
+
+
+def en_alcance_despacho(project: Project) -> bool:
+    """Proyectos que ve Despacho: los enviados por Desarrollo y su historial."""
+    return (
+        project.estado_desarrollo == "enviado_despacho"
+        or project.estado_despacho in _ALCANCE_DESPACHO
+    )
+
+
 def pendientes_despacho(projects: Iterable[Project]) -> int:
     """Proyectos en Desarrollo pendientes de entregar o resolver."""
-    alcance = tuple(
-        filter(
-            lambda p: p.estado_desarrollo == "enviado_despacho"
-            or p.estado_despacho in {"pendiente_entrega", "negado", "entregado"},
-            projects,
-        )
-    )
+    alcance = tuple(filter(en_alcance_despacho, projects))
     return len(agrupar_despacho(alcance)["pendientes"])
-

@@ -321,7 +321,8 @@ def complete_development(pid: str, db: DbSession, _: DesarrolloUser):
 def send_to_despacho(pid: str, db: DbSession, _: DesarrolloUser):
     repo = ProjectRepository(db)
     project = _get_project_or_404(db, pid)
-    tr = project_service.puede_pasar_a_despacho(project)
+    pagado = payment_service.sumar_pagos(PaymentRepository(db).list_by_project(pid))
+    tr = project_service.puede_pasar_a_despacho(project, pagado)
     if not tr.is_ok():
         raise HTTPException(422, tr.error.message)
     saved = repo.update(tr.unwrap())

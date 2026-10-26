@@ -129,7 +129,6 @@ export function DetalleDespachoPage() {
       <div className="mb-space-lg flex flex-wrap gap-space-xs">
         <EstadoBadge valor={p.estado_desarrollo} />
         <EstadoBadge valor={p.estado_despacho} />
-        {p.acciones.includes('liquidar') && <EstadoBadge valor="saldo_pendiente" />}
       </div>
 
       <div className="grid gap-space-lg lg:grid-cols-3">

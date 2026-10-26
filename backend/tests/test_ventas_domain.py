@@ -99,7 +99,47 @@ def test_pasar_a_desarrollo_menos_de_50_falla():
 
 def test_pasar_a_despacho_requiere_completado():
     p = _project()
-    assert not project_service.puede_pasar_a_despacho(p).is_ok()
+    assert not project_service.puede_pasar_a_despacho(p, Money(0)).is_ok()
+
+
+def _completado() -> Project:
+    """Proyecto enviado a Desarrollo y completado por Desarrollo."""
+    p = _project()
+    cobrado = project_service.set_estado_ventas(p, "cobrado_50", now=NOW).unwrap()  # type: ignore[union-attr]
+    enviado = project_service.puede_pasar_a_desarrollo(cobrado, Money.from_amount(50000)).unwrap()  # type: ignore[union-attr]
+    planificado = project_service.set_estado_desarrollo(enviado, "en_planificacion", now=NOW).unwrap()  # type: ignore[union-attr]
+    en_desarrollo = project_service.set_estado_desarrollo(planificado, "en_desarrollo", now=NOW).unwrap()  # type: ignore[union-attr]
+    return project_service.set_estado_desarrollo(en_desarrollo, "completado", now=NOW).unwrap()  # type: ignore[union-attr]
+
+
+def test_llegar_a_despacho_con_saldo_es_pendiente_de_cobro():
+    """El 50% restante pendiente hace que Despacho espere el cobro, no la entrega."""
+    r = project_service.puede_pasar_a_despacho(_completado(), Money.from_amount(50000))
+    assert r.is_ok() and r.unwrap().estado_despacho == "pendiente_cobro"  # type: ignore[union-attr]
+
+
+def test_llegar_a_despacho_pagado_es_pendiente_de_entrega():
+    r = project_service.puede_pasar_a_despacho(_completado(), Money.from_amount(100000))
+    assert r.is_ok() and r.unwrap().estado_despacho == "pendiente_entrega"  # type: ignore[union-attr]
+
+
+def test_liquidar_el_saldo_pasa_a_pendiente_de_entrega():
+    """Liquidado el resto, el estado deja de ser 'pendiente_cobro'."""
+    en_cobro = project_service.puede_pasar_a_despacho(  # type: ignore[union-attr]
+        _completado(), Money.from_amount(50000)
+    ).unwrap()
+    assert en_cobro.estado_despacho == "pendiente_cobro"
+    r = project_service.tras_liquidar(en_cobro, now=NOW)
+    assert r.is_ok() and r.unwrap().estado_despacho == "pendiente_entrega"  # type: ignore[union-attr]
+
+
+def test_liquidar_sin_saldo_pendiente_no_cambia_el_estado():
+    """En 'pendiente_entrega' liquidar no retrocede el estado."""
+    en_entrega = project_service.puede_pasar_a_despacho(  # type: ignore[union-attr]
+        _completado(), Money.from_amount(100000)
+    ).unwrap()
+    assert en_entrega.estado_despacho == "pendiente_entrega"
+    assert project_service.tras_liquidar(en_entrega, now=NOW).unwrap().estado_despacho == "pendiente_entrega"  # type: ignore[union-attr]
 
 
 def test_transicion_invalida_estado():

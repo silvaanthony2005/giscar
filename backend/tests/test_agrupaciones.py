@@ -153,3 +153,14 @@ def test_despacho_cuenta_pendientes_y_no_los_cerrados():
     entregado = _estado(_project(id="b"), desarrollo="enviado_despacho", despacho="entregado")
     negado = _estado(_project(id="c"), desarrollo="enviado_despacho", despacho="negado")
     assert project_service.pendientes_despacho([abiertos, entregado, negado]) == 1
+
+
+def test_pendiente_de_cobro_es_alcance_y_pendiente():
+    en_cobro = _estado(_project(id="a"), desarrollo="enviado_despacho", despacho="pendiente_cobro")
+    assert project_service.en_alcance_despacho(en_cobro)
+    assert project_service.pendientes_despacho([en_cobro]) == 1
+
+
+def test_un_proyecto_sin_llegar_a_despacho_no_es_alcance():
+    en_desarrollo = _estado(_project(id="a"), desarrollo="en_desarrollo", despacho="pendiente")
+    assert not project_service.en_alcance_despacho(en_desarrollo)

@@ -47,7 +47,17 @@ def _payment_out(p) -> dict:
     }
 
 
-def _project_out(p, pagado) -> dict:
+def _contacto_escalado(valor: str | None, del_cliente: str | None) -> str | None:
+    """Dato del levantamiento; si no, el del cliente; ninguno de los dos -> None."""
+    return (valor or "").strip() or ((del_cliente or "").strip() or None)
+
+
+def _project_out(p, pagado, customer=None):
+    """`contacto_*` del levantamiento; lo que no se capturó se recupera del cliente."""
+    contacto_email = _contacto_escalado(p.contacto_email, customer.email if customer else None)
+    contacto_direccion = _contacto_escalado(
+        p.contacto_direccion, customer.direccion if customer else None
+    )
     return {
         "id": p.id,
         "codigo": p.codigo,
@@ -55,8 +65,8 @@ def _project_out(p, pagado) -> dict:
         "customer_id": p.customer_id,
         "contacto_nombre": p.contacto_nombre,
         "contacto_telefono": p.contacto_telefono,
-        "contacto_email": p.contacto_email,
-        "contacto_direccion": p.contacto_direccion,
+        "contacto_email": contacto_email,
+        "contacto_direccion": contacto_direccion,
         "monto_total": p.monto_total.amount,
         "estado_ventas": p.estado_ventas,
         "estado_desarrollo": p.estado_desarrollo,
@@ -80,11 +90,9 @@ def list_projects(db: DbSession, _: DespachoUser):
 
     El criterio lo decide el dominio; el frontend solo las pinta.
     """
-    proyectos = [
-        p for p in ProjectRepository(db).list_all()
-        if p.estado_desarrollo == "enviado_despacho"
-        or p.estado_despacho in {"pendiente_entrega", "negado", "entregado"}
-    ]
+    proyectos = list(
+        filter(project_service.en_alcance_despacho, ProjectRepository(db).list_all())
+    )
     pagos_repo = PaymentRepository(db)
     customers = {c.id: c for c in CustomerRepository(db).list_all()}
 
@@ -95,7 +103,7 @@ def list_projects(db: DbSession, _: DespachoUser):
         dispatch = DispatchRepository(db).get_by_project(p.id)
         denial = DenialRepository(db).get_by_project(p.id)
         payload[p.id] = {
-            **_project_out(p, pagado),
+            **_project_out(p, pagado, customers.get(p.customer_id)),
             "cliente": customers[p.customer_id].nombre if p.customer_id in customers else "—",
             "pagado": pagado.amount,
             "saldo": saldo.amount,
@@ -117,7 +125,7 @@ def get_project(pid: str, db: DbSession, _: DespachoUser):
     saldo = project_service.saldo_restante(p.monto_total, pagado)
     customer = CustomerRepository(db).get(p.customer_id)
     return {
-        **_project_out(p, pagado),
+        **_project_out(p, pagado, customer),
         "cliente": customer,
         "pagado": pagado.amount,
         "saldo": saldo.amount,
@@ -145,12 +153,20 @@ def _register_remaining_payment(db, pid: str, user: User, metodo_pago: str, nota
     if not result.is_ok():
         raise HTTPException(422, result.error.message)
 
-    # La venta se cierra en Ventas: Despacho liquidó el saldo restante
-    if project.estado_ventas != "cerrado":
-        tr = project_service.set_estado_ventas(project, "cerrado", now=_now())
+    # Con el resto cobrado la venta se cierra en Ventas y Despacho deja de
+    # esperar el pago: todo se valida antes de escribir nada.
+    updated = project
+    if updated.estado_ventas != "cerrado":
+        tr = project_service.set_estado_ventas(updated, "cerrado", now=_now())
         if not tr.is_ok():
             raise HTTPException(422, tr.error.message)
-        ProjectRepository(db).update(tr.unwrap())
+        updated = tr.unwrap()
+    tr = project_service.tras_liquidar(updated, now=_now())
+    if not tr.is_ok():
+        raise HTTPException(422, tr.error.message)
+    updated = tr.unwrap()
+    if updated is not project:
+        ProjectRepository(db).update(updated)
 
     saved = PaymentRepository(db).add(result.unwrap())
     db.commit()
@@ -242,7 +258,12 @@ def deny(pid: str, body: s.DenialIn, db: DbSession, user: DespachoUser):
 @router.post("/proyectos/{pid}/resolver-negacion", response_model=dict)
 def resolve_denial(pid: str, db: DbSession, _: DespachoUser):
     project = _get_project(db, pid)
-    tr = project_service.set_estado_despacho(project, "pendiente_entrega", now=_now())
+    pagado = payment_service.sumar_pagos(PaymentRepository(db).list_by_project(pid))
+    saldo = project_service.saldo_restante(project.monto_total, pagado)
+    # Vuelve a esperar el cobro si aún queda saldo; si no, la entrega.
+    tr = project_service.set_estado_despacho(
+        project, project_service.estado_espera_despacho(saldo), now=_now()
+    )
     if not tr.is_ok():
         raise HTTPException(422, tr.error.message)
     saved = ProjectRepository(db).update(tr.unwrap())

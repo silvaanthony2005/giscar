@@ -19,10 +19,10 @@ const ESTADOS: Record<string, { label: string; tone: Tone }> = {
   cancelado: { label: 'Cancelado', tone: 'danger' },
   enviado_despacho: { label: 'En Despacho', tone: 'success' },
   // Despacho
+  pendiente_cobro: { label: 'Pendiente de cobro', tone: 'warning' },
   pendiente_entrega: { label: 'Pendiente de entrega', tone: 'warning' },
   entregado: { label: 'Entregado', tone: 'success' },
   negado: { label: 'Negado', tone: 'danger' },
-  saldo_pendiente: { label: 'Saldo pendiente', tone: 'warning' },
   // Fases
   en_curso: { label: 'En curso', tone: 'info' },
   // Incidencias

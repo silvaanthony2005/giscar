@@ -57,4 +57,29 @@ def init_db() -> None:
         columnas = {row[1] for row in conn.execute(text("PRAGMA table_info(customers)"))}
         if "representante" not in columnas:
             conn.execute(text("ALTER TABLE customers ADD COLUMN representante VARCHAR(255)"))
+        # Asignación de técnicos: la columna única pasa a la tabla
+        # incident_assignees (varios responsables) y se vacía para no repetir.
+        conn.execute(
+            text(
+                """
+                INSERT INTO incident_assignees (id, incident_id, user_id)
+                SELECT lower(hex(randomblob(16))), id, asignado_a FROM incidents
+                WHERE asignado_a IS NOT NULL
+                """
+            )
+        )
+        conn.execute(text("UPDATE incidents SET asignado_a = NULL"))
+        # Proyectos en Despacho que aún deben saldo: ahora esperan el cobro.
+        conn.execute(
+            text(
+                """
+                UPDATE projects SET estado_despacho = 'pendiente_cobro'
+                WHERE estado_despacho = 'pendiente_entrega'
+                  AND estado_desarrollo = 'enviado_despacho'
+                  AND monto_total > COALESCE(
+                        (SELECT SUM(monto) FROM payments WHERE payments.project_id = projects.id),
+                        0)
+                """
+            )
+        )
         conn.commit()

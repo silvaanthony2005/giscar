@@ -26,7 +26,13 @@ export interface DespachoDetalle {
   estado_desarrollo: string
   estado_despacho: string
   acciones: string[]
-  cliente: { id: string; nombre: string; telefono?: string | null; email?: string | null }
+  cliente: {
+    id: string
+    nombre: string
+    telefono?: string | null
+    email?: string | null
+    direccion?: string | null
+  }
   contacto_nombre: string
   contacto_telefono?: string | null
   contacto_email?: string | null

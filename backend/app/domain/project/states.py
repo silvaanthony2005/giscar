@@ -30,6 +30,8 @@ class EstadoDesarrollo(StrEnum):
 
 class EstadoDespacho(StrEnum):
     PENDIENTE = "pendiente"
+    # Espera el cobro del resto antes de poder entregar.
+    PENDIENTE_COBRO = "pendiente_cobro"
     PENDIENTE_ENTREGA = "pendiente_entrega"
     ENTREGADO = "entregado"
     NEGADO = "negado"
@@ -64,10 +66,23 @@ DESARROLLO_SM = StateMachine(
 DESPACHO_SM = StateMachine(
     initial=EstadoDespacho.PENDIENTE.value,
     transitions=(
+        # Si queda saldo por cobrar, la espera empieza en el cobro, no en la entrega.
+        Transition(
+            EstadoDespacho.PENDIENTE.value,
+            EstadoDespacho.PENDIENTE_COBRO.value,
+            "cobrar",
+        ),
         Transition(EstadoDespacho.PENDIENTE.value, EstadoDespacho.PENDIENTE_ENTREGA.value, "recibir"),
+        Transition(
+            EstadoDespacho.PENDIENTE_COBRO.value,
+            EstadoDespacho.PENDIENTE_ENTREGA.value,
+            "recibir",
+        ),
+        Transition(EstadoDespacho.PENDIENTE_COBRO.value, EstadoDespacho.NEGADO.value, "negar"),
         Transition(EstadoDespacho.PENDIENTE_ENTREGA.value, EstadoDespacho.ENTREGADO.value, "entregar"),
         Transition(EstadoDespacho.PENDIENTE_ENTREGA.value, EstadoDespacho.NEGADO.value, "negar"),
         Transition(EstadoDespacho.NEGADO.value, EstadoDespacho.PENDIENTE_ENTREGA.value, "resolver"),
+        Transition(EstadoDespacho.NEGADO.value, EstadoDespacho.PENDIENTE_COBRO.value, "resolver"),
         Transition(EstadoDespacho.NEGADO.value, EstadoDespacho.ENTREGADO.value, "entregar"),
     ),
 )

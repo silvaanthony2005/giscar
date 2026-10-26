@@ -136,6 +136,15 @@ def test_despacho_con_saldo_ofrece_liquidar():
     assert project_service.acciones_despacho(p, Money(0)) == ("liquidar", "negar")
 
 
+def test_despacho_pendiente_de_cobro_ofrece_liquidar_y_negar():
+    """En 'pendiente_cobro' aún no se puede entregar: falta cobrar el resto."""
+    p = _estado(
+        _project(), ventas="enviado_desarrollo", desarrollo="enviado_despacho",
+        despacho="pendiente_cobro",
+    )
+    assert project_service.acciones_despacho(p, Money(0)) == ("liquidar", "negar")
+
+
 def test_despacho_sin_saldo_ofrece_entregar():
     p = _estado(
         _project(), ventas="enviado_desarrollo", desarrollo="enviado_despacho",
