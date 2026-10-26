@@ -16,6 +16,8 @@ ACCIONES = {
     "usuario_actualizado",
     "usuario_bloqueado",
     "usuario_desbloqueado",
+    "usuario_desactivado",
+    "usuario_password_restablecido",
     "departamento_cambiado",
     "cliente_eliminado",
     "proyecto_creado",

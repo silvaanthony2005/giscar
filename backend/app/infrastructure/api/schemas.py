@@ -19,6 +19,7 @@ class DepartamentoSchema(StrEnum):
 class EstadoUsuarioSchema(StrEnum):
     activo = "activo"
     bloqueado = "bloqueado"
+    desactivado = "desactivado"
 
 
 class LoginRequest(BaseModel):
@@ -59,6 +60,7 @@ class CreateUserRequest(BaseModel):
 
 
 class UpdateUserRequest(BaseModel):
+    email: EmailStr | None = None
     nombre: str | None = None
     documento: str | None = None
     telefono: str | None = None
@@ -66,11 +68,7 @@ class UpdateUserRequest(BaseModel):
     cargo: str | None = None
     departamento: DepartamentoSchema | None = None
     estado: EstadoUsuarioSchema | None = None
-
-
-class ChangePasswordRequest(BaseModel):
-    current_password: str
-    new_password: str = Field(min_length=8, max_length=128)
+    password: str | None = Field(default=None, min_length=8, max_length=128)
 
 
 # --- Búsqueda global ---------------------------------------------------------

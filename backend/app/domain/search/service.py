@@ -133,9 +133,12 @@ def buscar_usuarios(usuarios: Iterable[User], consulta: str) -> tuple[Resultado,
             codigo=None,
         )
         for u in usuarios
-        if coincide(u.nombre, consulta)
-        or coincide(u.email, consulta)
-        or coincide(u.cargo, consulta)
+        if u.is_visible()
+        and (
+            coincide(u.nombre, consulta)
+            or coincide(u.email, consulta)
+            or coincide(u.cargo, consulta)
+        )
     )
 
 

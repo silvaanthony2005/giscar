@@ -110,15 +110,29 @@ def update_user(
     user_id: str,
     body: schemas.UpdateUserRequest,
     db: DbSession,
-    _: RrhhUser,
+    actor: RrhhUser,
 ) -> schemas.UserOut:
     repo = UserRepository(db)
     existing = repo.get_by_id(user_id)
     if existing is None:
         raise HTTPException(404, "Usuario no encontrado")
+    nuevo_email = body.email.strip().lower() if body.email is not None else None
+    if nuevo_email is not None and nuevo_email != existing.email and repo.email_exists(nuevo_email):
+        raise HTTPException(409, "El correo ya está registrado")
+    if body.estado is not None or body.departamento is not None:
+        guardia = user_service.validar_cambio_usuario(
+            repo.list_all(),
+            actor_id=actor.id,
+            objetivo=existing,
+            estado=EstadoUsuario(body.estado.value) if body.estado is not None else None,
+            departamento=Departamento(body.departamento.value) if body.departamento is not None else None,
+        )
+        if not guardia.is_ok():
+            raise HTTPException(422, guardia.error.message)
     now = datetime.now(UTC)
     updated = user_service.update_profile(
         existing,
+        email=body.email,
         nombre=body.nombre,
         documento=body.documento,
         telefono=body.telefono,
@@ -129,6 +143,13 @@ def update_user(
     if not updated.is_ok():
         raise HTTPException(422, updated.error.message)
     user = updated.unwrap()
+    if body.password is not None:
+        changed = user_service.change_password(
+            user, password_hash=hash_password(body.password), now=now
+        )
+        if not changed.is_ok():
+            raise HTTPException(422, changed.error.message)
+        user = changed.unwrap()
     if body.departamento is not None:
         user = user_service.set_departamento(
             user, Departamento(body.departamento.value), now=now
@@ -143,8 +164,14 @@ def update_user(
         entidad_tipo="usuario", entidad_id=saved.id,
         detalle=f"Estado: {saved.estado.value}, Departamento: {saved.departamento.value}",
     )
+    if body.password is not None:
+        log_action(db, accion="usuario_password_restablecido", user_id=saved.id, user_email=saved.email)
     if body.estado is not None:
-        accion = "usuario_bloqueado" if body.estado.value == "bloqueado" else "usuario_desbloqueado"
+        accion = {
+            "bloqueado": "usuario_bloqueado",
+            "activo": "usuario_desbloqueado",
+            "desactivado": "usuario_desactivado",
+        }[body.estado.value]
         log_action(db, accion=accion, user_id=saved.id, user_email=saved.email)
     db.commit()
     return _to_out(saved)

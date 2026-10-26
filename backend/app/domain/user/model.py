@@ -18,6 +18,7 @@ class Departamento(StrEnum):
 class EstadoUsuario(StrEnum):
     ACTIVO = "activo"
     BLOQUEADO = "bloqueado"
+    DESACTIVADO = "desactivado"  # baja lógica: el registro se conserva
 
 
 @dataclass(frozen=True, slots=True)
@@ -37,6 +38,10 @@ class User:
 
     def is_active(self) -> bool:
         return self.estado == EstadoUsuario.ACTIVO
+
+    def is_visible(self) -> bool:
+        """Los desactivados no aparecen en directorios ni búsquedas."""
+        return self.estado != EstadoUsuario.DESACTIVADO
 
     def can_access(self, *deps: Departamento) -> bool:
         return self.departamento in deps or self.departamento == Departamento.RRHH

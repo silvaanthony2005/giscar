@@ -39,6 +39,9 @@ export interface UsuarioRRHH {
   id: string
   email: string
   nombre: string
+  documento: string | null
+  telefono: string | null
+  direccion: string | null
   departamento: string
   cargo: string | null
   estado: string
