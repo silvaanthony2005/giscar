@@ -5,6 +5,7 @@ import { Input } from '../../atoms/Input'
 import { login } from '../../entities/auth/api'
 import { useAuthStore } from '../../entities/auth/store'
 import type { Departamento } from '../../entities/auth/types'
+import { ApiError } from '../../shared/api/client'
 import { DEPARTAMENTO_DESCRIPCION, DEPARTAMENTO_ICONS } from '../../shared/lib/nav'
 import { DEPARTAMENTOS } from '../../shared/lib/format'
 
@@ -16,6 +17,16 @@ const ACCESOS: Departamento[] = ['ventas', 'desarrollo', 'despacho', 'tecnologia
 // El módulo se llama Producción, pero la clave del departamento sigue siendo
 // 'desarrollo' (así están guardados los usuarios): solo cambia el correo.
 const correoDe = (d: Departamento): string => `${d === 'desarrollo' ? 'produccion' : d}@giscar.com`
+
+/** Traduce lo que tira el cliente de API a un mensaje apto para el usuario del login. */
+const mensajeDeErrorLogin = (err: unknown): string => {
+  if (!(err instanceof ApiError)) return 'Ha ocurrido algo inesperado. Intenta de nuevo.'
+  if (err.status === 401) return 'Usuario o contraseña inválidos'
+  if (err.status === 0 || err.status >= 500)
+    return 'El servidor no responde. Intenta de nuevo en unos segundos.'
+  // 403 y demás 4xx: el servidor ya manda un motivo específico (usuario bloqueado, etc.)
+  return err.message
+}
 
 export function LoginPage() {
   const [email, setEmail] = useState('')
@@ -35,7 +46,7 @@ export function LoginPage() {
       setAuth(res.access_token, res.user)
       navigate('/panel')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error de conexión')
+      setError(mensajeDeErrorLogin(err))
     } finally {
       setLoading(false)
     }
@@ -49,7 +60,7 @@ export function LoginPage() {
           <div className="relative mb-space-xs flex size-20 items-center justify-center rounded-xl bg-surface-container-lowest p-2 shadow-raised">
             <Icon name="hub" size="xl" className="text-primary" />
             <span className="absolute -bottom-1 -right-1 flex size-5 items-center justify-center rounded-full bg-secondary shadow-hairline">
-              <Icon name="verified_user" size="sm" className="text-[12px] text-on-secondary" />
+              <Icon name="verified_user" size="sm" className="text-on-secondary" />
             </span>
           </div>
           <div className="mb-space-xs flex items-center gap-space-sm">

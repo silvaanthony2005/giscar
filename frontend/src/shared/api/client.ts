@@ -17,9 +17,16 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   }
   if (token) headers.set('Authorization', `Bearer ${token}`)
 
-  const res = await fetch(`/api${path}`, { ...init, headers })
+  let res: Response
+  try {
+    res = await fetch(`/api${path}`, { ...init, headers })
+  } catch {
+    // fetch solo falla así cuando no hay red/servidor; el cuerpo no existe que leer
+    throw new ApiError(0, 'No hay conexión con el servidor')
+  }
 
-  if (res.status === 401) {
+  // Un 401 sin token no es sesión expirada: son credenciales inválidas (login).
+  if (res.status === 401 && token) {
     useAuthStore.getState().clear()
     throw new ApiError(401, 'Sesión expirada')
   }
