@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../shared/api/client'
+import type { Invoice } from './api'
 
 export interface DespachoProyecto {
   id: string
@@ -41,6 +42,8 @@ export interface DespachoDetalle {
   saldo: number
   por_pagado: number
   pagos: { id: string; monto: number; porcentaje: number; tipo: string; metodo_pago: string; fecha: string }[]
+  /** Facturas de anticipo (Ventas) y de liquidación (Despacho). */
+  facturas: Invoice[]
   entrega: {
     fecha_entrega: string
     hora_entrega?: string | null

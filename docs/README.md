@@ -34,7 +34,7 @@ Ventas → Producción (Desarrollo) → Despacho
 | Frontend | React 19 · TypeScript · Vite 8 · Tailwind 4 · React Router 7 · TanStack Query 5 · Zustand 5 |
 | PDFs | reportlab, generados en el servidor |
 | Despliegue | `127.0.0.1:8000` (API + build) o `.exe` con ventana WebView2 |
-| Pruebas | 187 tests de backend en verde (`uv run pytest -q`) |
+| Pruebas | 192 tests de backend en verde (`uv run pytest -q`) |
 | Tablas | 17 (`users`, `customers`, `projects`, …) |
 | Endpoints | 56 bajo `/api` |
 | Idioma de interfaz y documentos | Español |

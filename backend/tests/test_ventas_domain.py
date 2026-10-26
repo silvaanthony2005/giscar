@@ -253,3 +253,13 @@ def test_entregar_requiere_saldo_cero():
     p = _project()
     saldo = Money.from_amount(50000)
     assert not project_service.puede_entregar(p, Money.from_amount(50000), saldo).is_ok()
+
+
+def test_next_numero_factura_ignora_otros_anios_y_formatos():
+    assert invoice_service.next_numero([], year=2026) == "FAC-2026-00001"
+    assert (
+        invoice_service.next_numero(
+            ["FAC-2026-00001", "FAC-2026-00007", "FAC-2025-00099", "OTRO"], year=2026
+        )
+        == "FAC-2026-00008"
+    )

@@ -5,7 +5,6 @@ type Tone = 'neutral' | 'info' | 'success' | 'warning' | 'danger'
 
 const ESTADOS: Record<string, { label: string; tone: Tone }> = {
   // Ventas
-  borrador: { label: 'Borrador', tone: 'neutral' },
   levantamiento: { label: 'Levantamiento', tone: 'info' },
   cobrado_50: { label: 'Cobrado 50%', tone: 'warning' },
   cobrado_100: { label: 'Cobrado 100%', tone: 'success' },

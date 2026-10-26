@@ -7,6 +7,8 @@ import {
   useNegar,
   useResolverNegacion,
 } from '../../entities/project/despacho-api'
+import { invoicePdfUrl } from '../../entities/project/api'
+import { descargar } from '../../shared/api/client'
 import { Button } from '../../atoms/Button'
 import { Card } from '../../atoms/Card'
 import { Icon } from '../../atoms/Icon'
@@ -263,6 +265,37 @@ export function DetalleDespachoPage() {
           ))}
           {p.pagos.length === 0 && (
             <p className="text-body-md text-on-surface-variant">Sin pagos.</p>
+          )}
+        </div>
+      </section>
+
+      <section className="mt-space-lg">
+        <SectionHeader
+          icon="receipt_long"
+          title="Facturas emitidas"
+          description="Anticipos de Ventas y liquidación de Despacho."
+        />
+        <div className="space-y-space-sm">
+          {p.facturas.map((f) => (
+            <Card key={f.id} className="flex items-center justify-between gap-space-md p-space-lg">
+              <div className="min-w-0">
+                <span className="text-body-md font-semibold text-on-surface">{f.numero}</span>
+                <p className="text-label-sm text-on-surface-variant">
+                  {formatMoney(f.monto)} · {f.porcentaje}% · {formatDateTime(f.emitida_en)}
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant="tonal"
+                icon="download"
+                onClick={() => descargar(invoicePdfUrl(f.id)).catch((err) => alert(err.message))}
+              >
+                PDF
+              </Button>
+            </Card>
+          ))}
+          {p.facturas.length === 0 && (
+            <p className="text-body-md text-on-surface-variant">Sin facturas emitidas.</p>
           )}
         </div>
       </section>
