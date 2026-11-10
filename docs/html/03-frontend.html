@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="03 · Frontend — documentación técnica de GCISCAR">
+  <title>03 · Frontend · GCISCAR</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#contenido">Saltar al contenido</a>
+
+  <header class="topbar">
+    <button class="menu-btn" type="button" data-menu aria-label="Abrir menú"
+            aria-expanded="false" aria-controls="sidebar">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round"/>
+      </svg>
+    </button>
+    <a class="brand" href="index.html">
+      <span class="logo" aria-hidden="true">G</span>
+      <span class="brand-text"><strong>GCISCAR</strong><small>Documentación técnica</small></span>
+    </a>
+    <div class="topbar-right">
+      <span class="pill">v0.1.0</span>
+      <span class="pill pill-soft">Sistema local</span>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Documentación">
+      <div class="nav-search">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/>
+          <path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <input type="search" placeholder="Filtrar secciones…" aria-label="Filtrar secciones"
+               data-nav-filter autocomplete="off">
+      </div>
+      <nav class="nav" aria-label="Documentos">
+        <p class="nav-heading">Documentación</p>
+        <a class="nav-link" href="index.html" data-keywords="inicio"><span class="nav-num">◎</span><span>Inicio</span></a>
+        <a class="nav-link" href="01-arquitectura.html" data-keywords="arquitectura"><span class="nav-num">01</span><span>Arquitectura</span></a>
+        <a class="nav-link" href="02-backend.html" data-keywords="backend"><span class="nav-num">02</span><span>Backend</span></a>
+        <a class="nav-link is-active" href="03-frontend.html" aria-current="page" data-keywords="frontend"><span class="nav-num">03</span><span>Frontend</span></a>
+        <a class="nav-link" href="04-base-de-datos.html" data-keywords="base de datos"><span class="nav-num">04</span><span>Base de datos</span></a>
+        <a class="nav-link" href="05-api-e-integraciones.html" data-keywords="api e integraciones"><span class="nav-num">05</span><span>API e integraciones</span></a>
+        <a class="nav-link" href="06-seguridad.html" data-keywords="seguridad"><span class="nav-num">06</span><span>Seguridad</span></a>
+        <a class="nav-link" href="07-flujos-y-procesos.html" data-keywords="flujos y procesos"><span class="nav-num">07</span><span>Flujos y procesos</span></a>
+        <a class="nav-link" href="08-infraestructura-y-despliegue.html" data-keywords="infraestructura"><span class="nav-num">08</span><span>Infraestructura</span></a>
+      </nav>
+      <div class="sidebar-foot">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span>GCISCAR v0.1.0<br>Actualizado 2026-11-10<br>
+        <a href="../03-frontend.md">Markdown fuente</a></span>
+      </div>
+    </aside>
+
+    <div class="scrim" data-scrim hidden></div>
+
+    <main class="content" id="contenido">
+      <nav class="crumbs" aria-label="Ruta"><a href="index.html">Documentación</a><span>/</span><span>Frontend</span></nav>
+      <article class="prose">
+<h1 id="03-frontend">03 · Frontend</h1>
+<h2 id="1-stack">1. Stack</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Pieza</th>
+<th>Versión / uso</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>React</td>
+<td>19.2</td>
+</tr>
+<tr>
+<td>TypeScript</td>
+<td>6.0 (<code>tsc -b</code>)</td>
+</tr>
+<tr>
+<td>Vite</td>
+<td>8.3 + <code>@vitejs/plugin-react</code></td>
+</tr>
+<tr>
+<td>Tailwind CSS</td>
+<td>4.3 (<code>@tailwindcss/vite</code>, tokens en <code>src/index.css</code>)</td>
+</tr>
+<tr>
+<td>React Router</td>
+<td>7 (<code>BrowserRouter</code>, <code>Routes</code>, <code>NavLink</code>)</td>
+</tr>
+<tr>
+<td>TanStack Query</td>
+<td>5 (estado servidor, caché, mutaciones)</td>
+</tr>
+<tr>
+<td>Zustand</td>
+<td>5 + <code>persist</code> (sesión)</td>
+</tr>
+<tr>
+<td>Linter</td>
+<td>oxlint</td>
+</tr>
+<tr>
+<td>Tests</td>
+<td><strong>no configurados</strong></td>
+</tr>
+</tbody>
+</table></div>
+<p><code>vite.config.ts</code>:</p>
+<ul>
+<li>puerto <code>5173</code>;</li>
+<li>proxy <code>/api → http://127.0.0.1:8000</code> para desarrollo;</li>
+<li>plugins React + Tailwind.</li>
+</ul>
+<h2 id="2-organización-atom-design">2. Organización Atom Design</h2>
+<pre><code>frontend/src/
+  atoms/        Icon, Button, IconButton, Input, Select, Textarea, Checkbox,
+                Badge, Card, Tooltip
+  molecules/    Buscador, EstadoBadge/PrioridadBadge, FlujoProyecto, Modal, SectionHeader
+  organisms/    DataTable, Feedback (Loading/Error/Empty/StatCard), AdjuntosPanel
+  templates/    TopBar, Sidebar, PageHeader, DashboardLayout
+  pages/        auth, ventas, desarrollo, despacho, tecnologia, incidencias, rrhh
+  entities/     auth, panel, project (api + hooks), search
+  shared/       api/client.ts, lib/format.ts, lib/nav.ts
+  app/          App.tsx (router), ProtectedRoute.tsx
+  main.tsx      QueryClient + BrowserRouter
+  index.css     design system M3
+</code></pre>
+<p>Flujo de composición: <code>index.css</code> define tokens → <code>atoms</code> los consumen → <code>molecules</code>
+combinan átomos → <code>organisms</code> montan bloques → <code>templates</code> dan el layout → <code>pages</code>
+orquestan datos y acciones.</p>
+<h2 id="3-rutas">3. Rutas</h2>
+<p>Definidas en <code>src/app/App.tsx</code>.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Ruta</th>
+<th>Página</th>
+<th>Módulo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/login</code></td>
+<td><code>LoginPage</code></td>
+<td>Público (solo si no hay token)</td>
+</tr>
+<tr>
+<td><code>/</code></td>
+<td>redirect a <code>/panel</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>/panel</code></td>
+<td>redirect según departamento</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>/ventas</code></td>
+<td><code>ProyectosVentasPage</code></td>
+<td>Ventas</td>
+</tr>
+<tr>
+<td><code>/ventas/clientes</code></td>
+<td><code>ClientesPage</code></td>
+<td>Ventas</td>
+</tr>
+<tr>
+<td><code>/ventas/proyectos/:id</code></td>
+<td><code>DetalleProyectoVentasPage</code></td>
+<td>Ventas</td>
+</tr>
+<tr>
+<td><code>/desarrollo</code></td>
+<td><code>ProyectosDesarrolloPage</code></td>
+<td>Producción</td>
+</tr>
+<tr>
+<td><code>/desarrollo/proyectos/:id</code></td>
+<td><code>DetalleProyectoDesarrolloPage</code></td>
+<td>Producción</td>
+</tr>
+<tr>
+<td><code>/despacho</code></td>
+<td><code>ColaDespachoPage</code></td>
+<td>Despacho</td>
+</tr>
+<tr>
+<td><code>/despacho/proyectos/:id</code></td>
+<td><code>DetalleDespachoPage</code></td>
+<td>Despacho</td>
+</tr>
+<tr>
+<td><code>/tecnologia</code></td>
+<td><code>ColaIncidenciasPage</code></td>
+<td>Tecnología</td>
+</tr>
+<tr>
+<td><code>/tecnologia/incidencias/:id</code></td>
+<td><code>DetalleIncidenciaPage</code></td>
+<td>Tecnología</td>
+</tr>
+<tr>
+<td><code>/incidencias/nueva</code></td>
+<td><code>ReportarIncidenciaPage</code></td>
+<td>Todos</td>
+</tr>
+<tr>
+<td><code>/rrhh</code></td>
+<td><code>DashboardRRHHPage</code></td>
+<td>RRHH</td>
+</tr>
+<tr>
+<td><code>/rrhh/usuarios</code></td>
+<td><code>UsuariosRRHHPage</code></td>
+<td>RRHH</td>
+</tr>
+<tr>
+<td><code>/rrhh/proyectos</code></td>
+<td><code>ProyectosRRHHPage</code></td>
+<td>RRHH</td>
+</tr>
+<tr>
+<td><code>/rrhh/actividad</code></td>
+<td><code>ActividadRRHHPage</code></td>
+<td>RRHH</td>
+</tr>
+<tr>
+<td><code>*</code></td>
+<td>redirect</td>
+<td>—</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Protección:</strong> <code>ProtectedRoute</code> solo comprueba la existencia del token. <strong>No hay guardas
+por rol en el router</strong>: la autorización real la aplica el backend en cada request. La UI
+oculta navegación por departamento (<code>NAV</code>), pero escribir una URL de otro módulo renderiza
+la página y las llamadas devuelven 403.</p>
+<p><code>PanelRedirect</code> mapea departamento → ruta inicial:</p>
+<pre><code>ventas → /ventas
+desarrollo → /desarrollo
+despacho → /despacho
+tecnologia → /tecnologia
+rrhh → /rrhh
+</code></pre>
+<h2 id="4-sesión-y-autenticación">4. Sesión y autenticación</h2>
+<p><code>entities/auth/store.ts</code> (Zustand + <code>persist</code>, clave <code>giscar-auth</code> en <code>localStorage</code>):</p>
+<pre><code class="language-ts">token: string | null
+user: User | null
+setAuth(token, user)
+clear()
+</code></pre>
+<ul>
+<li><code>LoginPage</code> llama <code>login(email, password)</code> → <code>POST /api/auth/login</code>, guarda token y
+  usuario, navega a <code>/panel</code>.</li>
+<li>El directorio de accesos precarga el correo de cada departamento
+  (<code>produccion@giscar.com</code> para <code>desarrollo</code>); <strong>no</strong> contiene contraseñas.</li>
+<li><code>TopBar</code> permite cerrar sesión: limpia el store y navega a <code>/login</code>.</li>
+<li>No hay endpoint de logout en el backend; la auditoría define <code>logout</code> pero no se usa.</li>
+</ul>
+<h2 id="5-cliente-api">5. Cliente API</h2>
+<p><code>shared/api/client.ts</code>:</p>
+<ul>
+<li>prefija <code>/api</code> a cada ruta;</li>
+<li>añade <code>Authorization: Bearer &lt;token&gt;</code> si hay sesión;</li>
+<li><code>Content-Type: application/json</code> salvo <code>FormData</code>;</li>
+<li>401 con token → limpia sesión y lanza <code>ApiError(401, 'Sesión expirada')</code>;</li>
+<li>401 sin token (login) → propaga el error de credenciales;</li>
+<li>204 → <code>undefined</code>; resto → JSON;</li>
+<li>error de red → <code>ApiError(0, 'No hay conexión con el servidor')</code>;</li>
+<li><code>descargar(url)</code> trae el binario con <code>fetch</code> (porque un <code>&lt;a href&gt;</code> no envía Bearer),
+  crea un blob y dispara la descarga con el nombre de <code>Content-Disposition</code>.</li>
+</ul>
+<p>Métodos disponibles: <code>api.get/post/put/patch/delete</code>.</p>
+<h2 id="6-estado-del-servidor-react-query">6. Estado del servidor (React Query)</h2>
+<p><code>main.tsx</code> configura:</p>
+<pre><code class="language-ts">retry: 1
+refetchOnWindowFocus: false
+staleTime: 30_000
+</code></pre>
+<p>Claves principales:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Clave</th>
+<th>Datos</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>['ventas', 'clientes']</code></td>
+<td>Clientes</td>
+</tr>
+<tr>
+<td><code>['ventas', 'proyectos']</code> / <code>['ventas', 'proyecto', id]</code></td>
+<td>Proyectos</td>
+</tr>
+<tr>
+<td><code>['ventas', 'pagos', pid]</code>, <code>['ventas', 'facturas', pid]</code></td>
+<td>Cobros/facturas</td>
+</tr>
+<tr>
+<td><code>['desarrollo', 'tablero']</code></td>
+<td>Columnas del tablero</td>
+</tr>
+<tr>
+<td><code>['desarrollo', 'plan', pid]</code>, <code>['desarrollo', 'acciones', pid]</code></td>
+<td>Plan/acciones</td>
+</tr>
+<tr>
+<td><code>['desarrollo', 'cancelacion', pid]</code></td>
+<td>Informe de cancelación</td>
+</tr>
+<tr>
+<td><code>['despacho', 'proyectos']</code>, <code>['despacho', 'proyecto', pid]</code></td>
+<td>Cola/detalle</td>
+</tr>
+<tr>
+<td><code>['tecnologia', 'cola']</code>, <code>['tecnologia', 'incidencia', id]</code></td>
+<td>Incidencias</td>
+</tr>
+<tr>
+<td><code>['rrhh', ...]</code></td>
+<td>Dashboard, actividad, proyectos, usuarios</td>
+</tr>
+<tr>
+<td><code>['panel', 'contadores']</code></td>
+<td>Contadores del sidebar</td>
+</tr>
+<tr>
+<td><code>['buscar', término]</code></td>
+<td>Búsqueda global</td>
+</tr>
+<tr>
+<td><code>['auth', 'usuarios']</code></td>
+<td>Catálogo de usuarios</td>
+</tr>
+</tbody>
+</table></div>
+<p>Tras una mutación se invalidan <strong>todas</strong> las claves afectadas (incluidas las de otros
+departamentos), porque el estado del proyecto es compartido. Ejemplos:</p>
+<ul>
+<li>enviar a Producción invalida <code>ventas/proyectos</code>, <code>desarrollo/tablero</code> y
+  <code>panel/contadores</code>;</li>
+<li>liquidar en Despacho invalida <code>despacho</code>, <code>ventas</code> y <code>panel</code>;</li>
+<li>acciones de Desarrollo invalidan plan, acciones, cancelación, tablero, ventas,
+  despacho y contadores.</li>
+</ul>
+<h2 id="7-principio-de-frontend-pasivo">7. Principio de frontend pasivo</h2>
+<p>La UI <strong>no calcula</strong> reglas de negocio. El backend envía:</p>
+<ul>
+<li><code>pagado</code>, <code>saldo</code>, <code>por_pagado</code> (Despacho);</li>
+<li><code>acciones: string[]</code> por proyecto y por fase;</li>
+<li>tableros ya agrupados (<code>recibidos/en_curso/historial</code>,
+  <code>pendientes/cerrados</code>);</li>
+<li>contadores del sidebar;</li>
+<li>KPIs de RRHH;</li>
+<li>resultados de búsqueda ya filtrados por rol.</li>
+</ul>
+<p>La UI decide únicamente presentación:</p>
+<ul>
+<li>qué botón pintar según <code>acciones.includes(...)</code>;</li>
+<li>formato de moneda/fecha (<code>shared/lib/format.ts</code>, <code>Intl</code> es-DO, DOP);</li>
+<li>estado de modales, tabs, menús, debounce de búsqueda;</li>
+<li>validación HTML (<code>required</code>, <code>minLength</code>) como ayuda, nunca como fuente de verdad.</li>
+</ul>
+<p>Excepciones menores (solo presentación): el buscador suma los resultados visibles para
+mostrar “hay N coincidencias”, y <code>nav.ts</code> decide la URL de destino según <code>tipo</code>.</p>
+<h2 id="8-navegación-por-rol">8. Navegación por rol</h2>
+<p><code>shared/lib/nav.ts</code>:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Departamento</th>
+<th>Ítems</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ventas</td>
+<td>Proyectos · Clientes · Reportar incidencia</td>
+</tr>
+<tr>
+<td>desarrollo</td>
+<td>Proyectos · Reportar incidencia</td>
+</tr>
+<tr>
+<td>despacho</td>
+<td>Cola de entregas · Reportar incidencia</td>
+</tr>
+<tr>
+<td>tecnologia</td>
+<td>Incidencias</td>
+</tr>
+<tr>
+<td>rrhh</td>
+<td>Panel general · Usuarios · Proyectos · Bitácora · Reportar incidencia</td>
+</tr>
+</tbody>
+</table></div>
+<p>El sidebar de RRHH añade, además, un grupo por cada departamento (sin duplicar «Reportar
+incidencia»), con contador cuando aplica.</p>
+<p>Búsqueda global (<code>molecules/Buscador.tsx</code>):</p>
+<ul>
+<li>input en el TopBar (visible desde <code>md</code>);</li>
+<li>debounce 300 ms; consulta desde 2 caracteres;</li>
+<li><code>GET /api/buscar?q=…</code>;</li>
+<li>resultados agrupados por tipo con icono y código;</li>
+<li>navegación según <code>rutaResultado(tipo, id, departamento)</code>; para cliente/usuario abre el
+  listado porque no hay página de detalle.</li>
+</ul>
+<h2 id="9-design-system">9. Design system</h2>
+<p>Tokens en <code>index.css</code> bajo <code>@theme</code> (Tailwind 4):</p>
+<ul>
+<li><strong>Tipografía</strong>: Inter (sans) y JetBrains Mono (código); escala M3
+  <code>display-lg</code>, <code>headline-lg/md</code>, <code>title-lg/md</code>, <code>body-lg/md/sm</code>, <code>label-md/sm</code>,
+  <code>code-sm</code>.</li>
+<li><strong>Color</strong>: paleta M3 (<code>primary #00236f</code>, <code>secondary #0051d5</code>, superficies, outline,
+  error) + semánticos <code>success</code>, <code>warning</code>, <code>info</code> + rampa <code>brand-50…900</code>.</li>
+<li><strong>Espaciado</strong>: <code>space-2xs … 2xl</code>, <code>margin*</code>, <code>gutter*</code>.</li>
+<li><strong>Radios</strong>: <code>md/lg</code> 0.25 rem, <code>xl</code> 0.5 rem, <code>pill</code> 0.75 rem.</li>
+<li><strong>Sombras</strong>: <code>hairline</code>, <code>raised</code>, <code>pop</code>.</li>
+<li>Scrollbars personalizadas y respeto a <code>prefers-reduced-motion</code>.</li>
+</ul>
+<p>Reglas de estilo:</p>
+<ul>
+<li>No usar colores de la paleta Tailwind (<code>text-emerald-600</code>, etc.) ni tamaños <code>text-*</code>
+  arbitrarios; usar tokens (<code>text-title-md</code>, <code>bg-surface-container</code>, <code>text-error</code>).</li>
+<li>Iconos siempre con <code>atoms/Icon</code> (Material Symbols auto-hospedado en
+  <code>public/fonts/</code>). No se carga nada desde CDN.</li>
+<li>Componentes reutilizables; nada de HTML de Stitch copiado.</li>
+</ul>
+<h2 id="10-experiencia-de-uso">10. Experiencia de uso</h2>
+<ul>
+<li><strong>Login</strong>: tarjeta partida formulario/directorio, mostrar/ocultar contraseña, mensajes
+  específicos para 401/403/red.</li>
+<li><strong>DashboardLayout</strong>: TopBar fija, sidebar fijo en desktop, drawer en móvil, scroll al
+  inicio al cambiar de ruta.</li>
+<li><strong>Tableros</strong>: <code>DataTable</code> para listados y tarjetas/columnas para colas.</li>
+<li><strong>Detalle de proyecto (Producción)</strong>: guía de pasos <code>FlujoProyecto</code>, plan/fases,
+  miembros, avances, adjuntos, cancelación con informe.</li>
+<li><strong>Detalle de Despacho</strong>: datos de contacto, saldo, pagos, facturas descargables,
+  entrega, negación y resolución.</li>
+<li><strong>Tecnología</strong>: cola ordenada, prioridad, asignación múltiple, reporte de resolución y
+  evidencias.</li>
+<li><strong>RRHH</strong>: KPIs, proyectos globales, usuarios (alta/edición/bloqueo/reasignación) y
+  bitácora.</li>
+<li><strong>Accesibilidad</strong>: roles ARIA en buscador/modal, <code>aria-current</code>, foco visible,
+  contraste corregido, movimiento reducido.</li>
+</ul>
+<h2 id="11-nomenclatura-desarrollo-vs-producción">11. Nomenclatura «Desarrollo» vs «Producción»</h2>
+<ul>
+<li>El <strong>departamento</strong> y todas las claves internas siguen siendo <code>desarrollo</code>
+  (<code>/api/desarrollo</code>, <code>estado_desarrollo</code>, tabla <code>dev_*</code>).</li>
+<li>La <strong>etiqueta visible</strong> es «Producción» (<code>DEPARTAMENTOS.desarrollo = 'Producción'</code>).</li>
+<li>El correo semilla es <code>produccion@giscar.com</code>, pero el usuario se almacena con
+  <code>departamento = "desarrollo"</code>.</li>
+</ul>
+<p>No renombrar las claves sin migración: rompería datos, rutas y permisos.</p>
+<h2 id="12-build-y-verificación">12. Build y verificación</h2>
+<pre><code class="language-bash">cd frontend &amp;&amp; npm run build   # tsc -b &amp;&amp; vite build → dist/
+cd frontend &amp;&amp; npm run lint    # oxlint
+</code></pre>
+<p>El backend sirve <code>frontend/dist</code> en producción y en el <code>.exe</code>. No hay tests de frontend;
+la verificación es typecheck, lint y build.</p>
+      </article>
+      <footer class="page-foot">
+      <a class="page-link prev" href="02-backend.html"><small>Anterior</small><span>← Backend</span></a>
+      <a class="page-link next" href="04-base-de-datos.html"><small>Siguiente</small><span>Base de datos →</span></a>
+        <p class="source">Documento generado desde
+          <a href="../03-frontend.md">03-frontend.md</a> · 2026-11-10</p>
+      </footer>
+    </main>
+
+    <aside class="toc" aria-label="En esta página"><p class="toc-title">En esta página</p><ul>
+<li><a href="#1-stack">1. Stack</a></li>
+<li><a href="#2-organización-atom-design">2. Organización Atom Design</a></li>
+<li><a href="#3-rutas">3. Rutas</a></li>
+<li><a href="#4-sesión-y-autenticación">4. Sesión y autenticación</a></li>
+<li><a href="#5-cliente-api">5. Cliente API</a></li>
+<li><a href="#6-estado-del-servidor-react-query">6. Estado del servidor (React Query)</a></li>
+<li><a href="#7-principio-de-frontend-pasivo">7. Principio de frontend pasivo</a></li>
+<li><a href="#8-navegación-por-rol">8. Navegación por rol</a></li>
+<li><a href="#9-design-system">9. Design system</a></li>
+<li><a href="#10-experiencia-de-uso">10. Experiencia de uso</a></li>
+<li><a href="#11-nomenclatura-desarrollo-vs-producción">11. Nomenclatura «Desarrollo» vs «Producción»</a></li>
+<li><a href="#12-build-y-verificación">12. Build y verificación</a></li>
+</ul></aside>
+  </div>
+
+  <script defer src="assets/mermaid.min.js"></script>
+  <script defer src="assets/docs.js"></script>
+</body>
+</html>

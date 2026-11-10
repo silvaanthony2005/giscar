@@ -1,0 +1,676 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="06 · Seguridad — documentación técnica de GCISCAR">
+  <title>06 · Seguridad · GCISCAR</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#contenido">Saltar al contenido</a>
+
+  <header class="topbar">
+    <button class="menu-btn" type="button" data-menu aria-label="Abrir menú"
+            aria-expanded="false" aria-controls="sidebar">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round"/>
+      </svg>
+    </button>
+    <a class="brand" href="index.html">
+      <span class="logo" aria-hidden="true">G</span>
+      <span class="brand-text"><strong>GCISCAR</strong><small>Documentación técnica</small></span>
+    </a>
+    <div class="topbar-right">
+      <span class="pill">v0.1.0</span>
+      <span class="pill pill-soft">Sistema local</span>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Documentación">
+      <div class="nav-search">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/>
+          <path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <input type="search" placeholder="Filtrar secciones…" aria-label="Filtrar secciones"
+               data-nav-filter autocomplete="off">
+      </div>
+      <nav class="nav" aria-label="Documentos">
+        <p class="nav-heading">Documentación</p>
+        <a class="nav-link" href="index.html" data-keywords="inicio"><span class="nav-num">◎</span><span>Inicio</span></a>
+        <a class="nav-link" href="01-arquitectura.html" data-keywords="arquitectura"><span class="nav-num">01</span><span>Arquitectura</span></a>
+        <a class="nav-link" href="02-backend.html" data-keywords="backend"><span class="nav-num">02</span><span>Backend</span></a>
+        <a class="nav-link" href="03-frontend.html" data-keywords="frontend"><span class="nav-num">03</span><span>Frontend</span></a>
+        <a class="nav-link" href="04-base-de-datos.html" data-keywords="base de datos"><span class="nav-num">04</span><span>Base de datos</span></a>
+        <a class="nav-link" href="05-api-e-integraciones.html" data-keywords="api e integraciones"><span class="nav-num">05</span><span>API e integraciones</span></a>
+        <a class="nav-link is-active" href="06-seguridad.html" aria-current="page" data-keywords="seguridad"><span class="nav-num">06</span><span>Seguridad</span></a>
+        <a class="nav-link" href="07-flujos-y-procesos.html" data-keywords="flujos y procesos"><span class="nav-num">07</span><span>Flujos y procesos</span></a>
+        <a class="nav-link" href="08-infraestructura-y-despliegue.html" data-keywords="infraestructura"><span class="nav-num">08</span><span>Infraestructura</span></a>
+      </nav>
+      <div class="sidebar-foot">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span>GCISCAR v0.1.0<br>Actualizado 2026-11-10<br>
+        <a href="../06-seguridad.md">Markdown fuente</a></span>
+      </div>
+    </aside>
+
+    <div class="scrim" data-scrim hidden></div>
+
+    <main class="content" id="contenido">
+      <nav class="crumbs" aria-label="Ruta"><a href="index.html">Documentación</a><span>/</span><span>Seguridad</span></nav>
+      <article class="prose">
+<h1 id="06-seguridad">06 · Seguridad</h1>
+<h2 id="1-modelo-de-amenaza">1. Modelo de amenaza</h2>
+<p>GCISCAR está pensado para <strong>una PC local</strong>, sin exposición a internet y con usuarios
+internos. Las amenazas relevantes son:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Amenaza</th>
+<th>Superficie</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Acceso físico a la PC</td>
+<td>Archivo SQLite, <code>uploads/</code>, <code>.env</code>, sesión en <code>localStorage</code></td>
+</tr>
+<tr>
+<td>Usuario interno con credenciales</td>
+<td>Intentar acciones de otro departamento por API</td>
+</tr>
+<tr>
+<td>Fuerza bruta al login</td>
+<td>Sin rate limiting</td>
+</tr>
+<tr>
+<td>Archivos maliciosos</td>
+<td>Subida de adjuntos/evidencias</td>
+</tr>
+<tr>
+<td>XSS / inyección</td>
+<td>Formularios y campos de texto</td>
+</tr>
+<tr>
+<td>Divulgación de datos</td>
+<td>Adjuntos y facturas descargables con solo un ID</td>
+</tr>
+<tr>
+<td>Pérdida de datos</td>
+<td>Sin backup automático</td>
+</tr>
+</tbody>
+</table></div>
+<p>Quedan <strong>fuera de alcance</strong>: ataques de red, TLS, multitenencia, cumplimiento normativo
+formal y alta disponibilidad.</p>
+<h2 id="2-autenticación">2. Autenticación</h2>
+<h3 id="21-contraseñas">2.1 Contraseñas</h3>
+<p><code>infrastructure/security/password.py</code>:</p>
+<pre><code class="language-python">PasswordHasher(time_cost=2, memory_cost=64 * 1024, parallelism=2)  # Argon2
+</code></pre>
+<ul>
+<li>Hash Argon2 (formato <code>$argon2id$...</code>) en <code>users.password_hash</code>.</li>
+<li>Verificación con <code>VerifyMismatchError</code> / <code>VerificationError</code> → <code>False</code>.</li>
+<li>Nunca se guarda ni se registra la contraseña en claro.</li>
+<li>El seed usa <code>SEED_PASSWORD = "giscar1234"</code>; el alta de usuarios exige mínimo 8
+  caracteres (Pydantic).</li>
+</ul>
+<h3 id="22-login">2.2 Login</h3>
+<p><code>POST /api/auth/login</code>:</p>
+<div class="mermaid">
+sequenceDiagram
+    participant U as Usuario
+    participant R as Router auth
+    participant DB as SQLite
+    participant JWT as security/jwt
+
+    U->>R: email + password
+    R->>DB: SELECT user por email
+    alt no existe o hash no coincide
+        R->>DB: audit login_fallido
+        R-->>U: 401 Credenciales inválidas
+    else coincide
+        R->>R: user_service.can_login()
+        alt bloqueado / desactivado
+            R->>DB: audit login_fallido
+            R-->>U: 403 motivo
+        else activo
+            R->>JWT: create_access_token(sub, dep)
+            R->>DB: audit login
+            R-->>U: 200 access_token + user
+        end
+    end
+</div>
+<ul>
+<li>Mismo mensaje (<code>Credenciales inválidas</code>) para email inexistente y contraseña errónea:
+  evita enumerar usuarios.</li>
+<li>El usuario bloqueado sí recibe un mensaje específico (decisión de UX).</li>
+<li><code>audit_logs</code> registra email intentado en <code>login_fallido</code>, con o sin <code>user_id</code>.</li>
+</ul>
+<h3 id="23-token">2.3 Token</h3>
+<p><code>infrastructure/security/jwt.py</code>:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Claim</th>
+<th>Valor</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>sub</code></td>
+<td>id del usuario</td>
+</tr>
+<tr>
+<td><code>dep</code></td>
+<td>departamento al emitir</td>
+</tr>
+<tr>
+<td><code>exp</code></td>
+<td>ahora + <code>access_token_minutes</code> (480 min por defecto)</td>
+</tr>
+<tr>
+<td><code>iat</code></td>
+<td>ahora</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li>Algoritmo <strong>HS256</strong>, secreto <code>GISCAR_JWT_SECRET</code>.</li>
+<li><code>decode_token</code> devuelve <code>Result</code>; cualquier <code>PyJWTError</code> → 401.</li>
+<li>No hay refresh token ni revocación por lista negra. La sesión termina al expirar o al
+  limpiar el cliente.</li>
+</ul>
+<h3 id="24-validación-por-request">2.4 Validación por request</h3>
+<p><code>get_current_user</code> (<code>security/deps.py</code>):</p>
+<ol>
+<li>Lee <code>Authorization: Bearer</code>.</li>
+<li>Decodifica el JWT.</li>
+<li>Extrae <code>sub</code>.</li>
+<li><strong>Carga el usuario desde la BD</strong> (no confía en <code>dep</code> del token).</li>
+<li>Exige que exista y esté <code>activo</code>.</li>
+</ol>
+<p>Consecuencias positivas:</p>
+<ul>
+<li>Bloquear/desactivar a un usuario invalida su token <strong>de inmediato</strong>.</li>
+<li>Cambiar su departamento surte efecto en la siguiente petición.</li>
+<li>El claim <code>dep</code> queda informativo; la autorización usa el estado actual.</li>
+</ul>
+<h3 id="25-sesión-en-el-cliente">2.5 Sesión en el cliente</h3>
+<ul>
+<li>Zustand <code>persist</code> guarda <code>token</code> y <code>user</code> en <code>localStorage</code> (<code>giscar-auth</code>).</li>
+<li><code>api.client</code> añade el header automáticamente.</li>
+<li>Un <code>401</code> con token limpia la sesión y muestra «Sesión expirada».</li>
+<li>No hay cierre de sesión por inactividad; el token dura 8 h.</li>
+<li>Riesgo: en una PC compartida, otra persona puede reutilizar la sesión guardada mientras
+  el token siga vigente.</li>
+</ul>
+<h2 id="3-autorización">3. Autorización</h2>
+<h3 id="31-mecanismo">3.1 Mecanismo</h3>
+<p><code>require_department(*deps)</code> comprueba:</p>
+<pre><code class="language-python">user.departamento in deps or user.departamento == Departamento.RRHH
+</code></pre>
+<p>Se aplica como dependencia de FastAPI en cada router. No hay permisos por recurso ni por
+propietario: <strong>todo el departamento ve todo su módulo</strong>.</p>
+<h3 id="32-matriz-de-acceso-por-módulo">3.2 Matriz de acceso por módulo</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Módulo / ruta</th>
+<th style="text-align: center;">Ventas</th>
+<th style="text-align: center;">Producción</th>
+<th style="text-align: center;">Despacho</th>
+<th style="text-align: center;">Tecnología</th>
+<th style="text-align: center;">RRHH</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/api/auth/me</code>, <code>/api/panel</code>, <code>/api/buscar</code></td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td><code>/api/auth/usuarios</code> (gestión)</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td><code>/api/ventas/*</code></td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">✅*</td>
+</tr>
+<tr>
+<td><code>/api/ventas/facturas/{id}/pdf</code></td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td><code>/api/desarrollo/*</code></td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">✅*</td>
+</tr>
+<tr>
+<td><code>/api/desarrollo/adjuntos/*</code></td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td><code>/api/despacho/*</code></td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">✅*</td>
+</tr>
+<tr>
+<td><code>/api/tecnologia/incidencias</code> (POST)</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td><code>/api/tecnologia/*</code> (gestión)</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅*</td>
+</tr>
+<tr>
+<td><code>/api/rrhh/*</code></td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">✅</td>
+</tr>
+</tbody>
+</table></div>
+<p><code>*</code> RRHH pasa todos los <code>require_department</code> por <code>User.can_access()</code>. Es un <strong>acceso
+funcional completo (lectura y escritura)</strong>, no solo lectura, aunque la UI de RRHH solo
+exponga vistas de consulta y gestión de usuarios. Si se requiere lectura estricta, hay
+que separar <code>require_department</code> de <code>require_read_department</code> o eliminar el bypass de
+RRHH y añadirlo explícitamente solo en rutas de lectura.</p>
+<h3 id="33-alcance-de-los-datos">3.3 Alcance de los datos</h3>
+<ul>
+<li>Proyectos: cualquier usuario de Ventas ve todos los proyectos, no solo los suyos.</li>
+<li>Producción y Despacho ven el tablero completo de su módulo.</li>
+<li>Tecnología ve todas las incidencias.</li>
+<li>RRHH ve todo.</li>
+<li>La búsqueda respeta categorías por departamento (<code>domain/search/service.py</code>).</li>
+<li>Los contadores del panel solo incluyen departamentos visibles.</li>
+</ul>
+<p>No existe filtrado por <code>created_by</code> ni por equipo asignado.</p>
+<h3 id="34-frontend">3.4 Frontend</h3>
+<ul>
+<li><code>ProtectedRoute</code> solo exige token.</li>
+<li>El router no valida rol; el sidebar oculta enlaces por departamento.</li>
+<li>Escribir manualmente <code>/rrhh/usuarios</code> con sesión de Ventas renderiza la página, pero las
+  llamadas fallan con 403.</li>
+<li><strong>La seguridad efectiva está en el backend</strong>, correctamente.</li>
+</ul>
+<h3 id="35-reglas-de-negocio-como-control">3.5 Reglas de negocio como control</h3>
+<p>Además del RBAC, el dominio impide operaciones inseguras o incoherentes:</p>
+<ul>
+<li>No se puede bloquear/desactivar al último RRHH activo ni a uno mismo.</li>
+<li>No se puede entregar con saldo pendiente.</li>
+<li>No se puede pasar a Producción sin ≥ 50 % cobrado.</li>
+<li>No se puede completar Producción con fases abiertas.</li>
+<li>No se puede cancelar sin informe ≥ 30 caracteres.</li>
+<li>No se puede asignar una incidencia cerrada.</li>
+<li>No se puede borrar un cliente con proyectos.</li>
+</ul>
+<h2 id="4-validación-en-fronteras">4. Validación en fronteras</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Frontera</th>
+<th>Herramienta</th>
+<th>Ejemplos</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>HTTP body/query</td>
+<td>Pydantic</td>
+<td><code>EmailStr</code>, <code>min_length</code>, <code>gt=0</code>, <code>pattern</code> de prioridad, enums</td>
+</tr>
+<tr>
+<td>Reglas de negocio</td>
+<td>Dominio puro</td>
+<td>saldo, estados, 50 %, fases, último RRHH</td>
+</tr>
+<tr>
+<td>Base de datos</td>
+<td>SQLAlchemy + FKs</td>
+<td>integridad referencial (<code>foreign_keys=ON</code>)</td>
+</tr>
+<tr>
+<td>Archivos</td>
+<td>Dominio + config</td>
+<td>MIME, tamaño, nombre saneado</td>
+</tr>
+<tr>
+<td>Frontend</td>
+<td>HTML5</td>
+<td><code>required</code>, <code>minLength</code> (solo UX)</td>
+</tr>
+</tbody>
+</table></div>
+<p>El servidor <strong>revalida todo</strong>; el HTML del cliente no es un control de seguridad.</p>
+<h2 id="5-subida-y-descarga-de-archivos">5. Subida y descarga de archivos</h2>
+<h3 id="subida-post-apidesarrolloadjuntostipoid">Subida (<code>POST /api/desarrollo/adjuntos/{tipo}/{id}</code>)</h3>
+<ol>
+<li>El usuario debe pertenecer a Ventas, Producción, Despacho o Tecnología (o RRHH).</li>
+<li><code>validate_entidad_tipo</code> exige un tipo de la lista.</li>
+<li>Se lee el archivo completo en memoria (<code>await file.read()</code>), lo que limita el impacto
+   del tamaño máximo configurado.</li>
+<li><code>validate_upload</code>:
+   - nombre no vacío;
+   - <code>content_type</code> en lista blanca (PDF, imágenes, texto, Office);
+   - <code>0 &lt; tamaño ≤ 20 MB</code>.</li>
+<li><code>safe_filename</code> reemplaza caracteres no seguros y prefija el UUID:
+   <code>re.sub(r"[^\w.\-]+", "_", nombre)</code> + <code>id_</code>.</li>
+<li>Se escribe en <code>uploads/</code> y se guardan metadatos en <code>attachments</code>.</li>
+</ol>
+<p><strong>Limitaciones:</strong></p>
+<ul>
+<li>El MIME se confía del cliente (<code>Content-Type</code> del multipart); <strong>no se inspecciona el
+  contenido real</strong> (magic bytes). Un ejecutable renombrado con MIME de imagen podría
+  almacenarse.</li>
+<li>No se escanean virus.</li>
+<li>No se valida que <code>entidad_id</code> exista ni que el usuario tenga relación con esa entidad.</li>
+</ul>
+<h3 id="descarga-get-apidesarrolloadjuntosaiddescargar">Descarga (<code>GET /api/desarrollo/adjuntos/{aid}/descargar</code>)</h3>
+<ul>
+<li>Cualquiera de los cuatro departamentos operativos (o RRHH) puede descargar <strong>cualquier</strong>
+  adjunto si conoce su ID (no hay comprobación de pertenencia).</li>
+<li>Se sirve con el MIME guardado y el nombre original.</li>
+<li>El archivo físico debe existir; si no, 404.</li>
+<li>La ruta usa el nombre saneado de la BD, no entrada directa del usuario: no hay path
+  traversal explotable.</li>
+</ul>
+<h3 id="facturas">Facturas</h3>
+<p><code>GET /api/ventas/facturas/{iid}/pdf</code> requiere Ventas (o RRHH). Cualquier usuario de
+Ventas puede descargar cualquier factura por ID. El PDF se genera al vuelo; no se guarda.</p>
+<h2 id="6-auditoría">6. Auditoría</h2>
+<p><code>audit_logs</code> registra acciones sensibles desde las rutas:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Acción</th>
+<th>Origen</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>login</code>, <code>login_fallido</code></td>
+<td>auth</td>
+</tr>
+<tr>
+<td><code>usuario_creado</code>, <code>usuario_actualizado</code>, <code>usuario_password_restablecido</code>, <code>usuario_bloqueado</code>, <code>usuario_desbloqueado</code>, <code>usuario_desactivado</code></td>
+<td>auth</td>
+</tr>
+<tr>
+<td><code>cliente_eliminado</code></td>
+<td>ventas</td>
+</tr>
+<tr>
+<td><code>proyecto_creado</code>, <code>pago_registrado</code>, <code>factura_emitida</code></td>
+<td>ventas</td>
+</tr>
+<tr>
+<td><code>proyecto_cancelado</code></td>
+<td>desarrollo</td>
+</tr>
+<tr>
+<td><code>entrega_confirmada</code>, <code>proyecto_negado</code></td>
+<td>despacho</td>
+</tr>
+<tr>
+<td><code>incidencia_creada</code>, <code>incidencia_resuelta</code></td>
+<td>tecnologia</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li><code>log_action</code> es <strong>best-effort</strong>: una acción fuera de la whitelist se ignora sin romper
+  el flujo.</li>
+<li><code>logout</code> está en la whitelist pero no se emite.</li>
+<li><code>ip</code> existe en el modelo pero <strong>ninguna ruta la rellena</strong> (siempre <code>NULL</code>).</li>
+<li>No se auditan lecturas, cambios de estado de fases, avances ni asignaciones.</li>
+<li>Solo RRHH puede leer la bitácora (<code>GET /api/rrhh/actividad</code>, máx. 500).</li>
+<li>No hay firma ni hash encadenado: un administrador de la BD puede alterar registros.</li>
+</ul>
+<h2 id="7-secretos-y-configuración">7. Secretos y configuración</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Secreto</th>
+<th>Dónde</th>
+<th>Riesgo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GISCAR_JWT_SECRET</code></td>
+<td><code>config.py</code> (default) o <code>backend/.env</code></td>
+<td>Si se queda el default, cualquiera con el binario puede firmar tokens</td>
+</tr>
+<tr>
+<td>Contraseña semilla</td>
+<td><code>seed.py</code> (<code>giscar1234</code>)</td>
+<td>Conocida públicamente en el README</td>
+</tr>
+<tr>
+<td>Hash de contraseñas</td>
+<td>BD</td>
+<td>Argon2, resistente a fuerza bruta offline</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li><code>.gitignore</code> excluye <code>.env</code>, <code>giscar.db*</code> y <code>uploads/</code>.</li>
+<li>En la instalación, los datos están en <code>%LOCALAPPDATA%\GCISCAR</code> (accesibles al usuario
+  de Windows; no hay cifrado).</li>
+<li>No hay gestor de secretos ni rotación automática.</li>
+</ul>
+<h2 id="8-riesgos-residuales">8. Riesgos residuales</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>Riesgo</th>
+<th>Severidad</th>
+<th>Mitigación recomendada</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Secreto JWT y contraseña semilla por defecto</td>
+<td><strong>Alta</strong></td>
+<td>Generar secreto aleatorio en la instalación y forzar cambio de contraseña</td>
+</tr>
+<tr>
+<td>2</td>
+<td>RRHH tiene escritura en todos los módulos vía API</td>
+<td><strong>Alta</strong></td>
+<td>Separar permiso de lectura global del de escritura</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Sin rate limiting en login</td>
+<td>Media</td>
+<td>Intentos por email/IP con backoff; bloqueo temporal</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Token en <code>localStorage</code> sin expiración deslizante</td>
+<td>Media</td>
+<td>Reducir duración, logout por inactividad, almacenamiento más seguro en WebView</td>
+</tr>
+<tr>
+<td>5</td>
+<td>MIME confiado del cliente</td>
+<td>Media</td>
+<td>Validar magic bytes y extensiones; antivirus opcional</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Descarga de adjuntos/facturas por ID sin pertenencia</td>
+<td>Media</td>
+<td>Autorizar por entidad/proyecto</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Sin TLS (HTTP en loopback)</td>
+<td>Baja (local)</td>
+<td>No exponer a LAN; si se hace, TLS + reverse proxy</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Sin backups automáticos</td>
+<td>Media</td>
+<td>Copia programada de <code>.db</code>, <code>-wal</code>, <code>-shm</code> y <code>uploads/</code></td>
+</tr>
+<tr>
+<td>9</td>
+<td>Sin migraciones versionadas</td>
+<td>Media</td>
+<td>Introducir Alembic antes de cambios de esquema grandes</td>
+</tr>
+<tr>
+<td>10</td>
+<td><code>ip</code> de auditoría vacía</td>
+<td>Baja</td>
+<td>Pasar <code>request.client.host</code> a <code>log_action</code></td>
+</tr>
+<tr>
+<td>11</td>
+<td>Sin cabeceras de seguridad</td>
+<td>Baja</td>
+<td><code>X-Content-Type-Options</code>, CSP, <code>Referrer-Policy</code></td>
+</tr>
+<tr>
+<td>12</td>
+<td>Datos sin cifrar en disco</td>
+<td>Baja/Media</td>
+<td>Cifrado de disco (BitLocker) en la PC</td>
+</tr>
+<tr>
+<td>13</td>
+<td><code>OCR</code>/contenido de adjuntos no analizado</td>
+<td>Baja</td>
+<td>Política de archivos permitidos</td>
+</tr>
+<tr>
+<td>14</td>
+<td>Numeración no atómica</td>
+<td>Baja</td>
+<td>Secuencias en BD o transacción con bloqueo</td>
+</tr>
+<tr>
+<td>15</td>
+<td>CORS abierto solo en dev</td>
+<td>Baja</td>
+<td>Mantener orígenes explícitos; no usar <code>*</code></td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="9-checklist-antes-de-uso-real">9. Checklist antes de uso real</h2>
+<ul>
+<li class="task"><span class="task-box"></span>Cambiar <code>GISCAR_JWT_SECRET</code> por una cadena aleatoria ≥ 32 bytes.</li>
+<li class="task"><span class="task-box"></span>Cambiar las 5 contraseñas semilla (<code>giscar1234</code>).</li>
+<li class="task"><span class="task-box"></span>Crear usuarios reales y <strong>desactivar</strong> las cuentas de demostración.</li>
+<li class="task"><span class="task-box"></span>Verificar que <code>backend/.env</code> (o el entorno del <code>.exe</code>) no está en git.</li>
+<li class="task"><span class="task-box"></span>Definir responsable y frecuencia de backup de <code>giscar.db*</code> y <code>uploads/</code>.</li>
+<li class="task"><span class="task-box"></span>Restringir el acceso físico/Windows a la PC y a <code>%LOCALAPPDATA%\GCISCAR</code>.</li>
+<li class="task"><span class="task-box"></span>Confirmar que el puerto 8000 solo escucha en <code>127.0.0.1</code> (no <code>0.0.0.0</code>).</li>
+<li class="task"><span class="task-box"></span>Revisar si RRHH debe conservar acceso de escritura a todos los módulos.</li>
+<li class="task"><span class="task-box"></span>Documentar el procedimiento de baja de un empleado (bloquear/desactivar).</li>
+<li class="task"><span class="task-box"></span>Probar restauración de un backup en una copia, no en producción.</li>
+</ul>
+<h2 id="10-respuesta-a-incidentes-mínimo-viable">10. Respuesta a incidentes (mínimo viable)</h2>
+<ol>
+<li><strong>Sospecha de credenciales comprometidas</strong>: bloquear el usuario en RRHH (invalida su
+   token al instante), revisar <code>audit_logs</code> y cambiar la contraseña.</li>
+<li><strong>Archivo malicioso</strong>: eliminar la fila de <code>attachments</code> y el archivo de <code>uploads/</code>;
+   revisar quién lo subió.</li>
+<li><strong>Corrupción de BD</strong>: detener la app, restaurar el último backup verificado y revisar
+   <code>PRAGMA integrity_check</code>.</li>
+<li><strong>Secreto filtrado</strong>: rotar <code>GISCAR_JWT_SECRET</code> (invalida todas las sesiones) y
+   redistribuir la app.</li>
+</ol>
+      </article>
+      <footer class="page-foot">
+      <a class="page-link prev" href="05-api-e-integraciones.html"><small>Anterior</small><span>← API e integraciones</span></a>
+      <a class="page-link next" href="07-flujos-y-procesos.html"><small>Siguiente</small><span>Flujos y procesos →</span></a>
+        <p class="source">Documento generado desde
+          <a href="../06-seguridad.md">06-seguridad.md</a> · 2026-11-10</p>
+      </footer>
+    </main>
+
+    <aside class="toc" aria-label="En esta página"><p class="toc-title">En esta página</p><ul>
+<li><a href="#1-modelo-de-amenaza">1. Modelo de amenaza</a></li>
+<li><a href="#2-autenticación">2. Autenticación</a><ul>
+<li><a href="#21-contraseñas">2.1 Contraseñas</a></li>
+<li><a href="#22-login">2.2 Login</a></li>
+<li><a href="#23-token">2.3 Token</a></li>
+<li><a href="#24-validación-por-request">2.4 Validación por request</a></li>
+<li><a href="#25-sesión-en-el-cliente">2.5 Sesión en el cliente</a></li>
+</ul>
+</li>
+<li><a href="#3-autorización">3. Autorización</a><ul>
+<li><a href="#31-mecanismo">3.1 Mecanismo</a></li>
+<li><a href="#32-matriz-de-acceso-por-módulo">3.2 Matriz de acceso por módulo</a></li>
+<li><a href="#33-alcance-de-los-datos">3.3 Alcance de los datos</a></li>
+<li><a href="#34-frontend">3.4 Frontend</a></li>
+<li><a href="#35-reglas-de-negocio-como-control">3.5 Reglas de negocio como control</a></li>
+</ul>
+</li>
+<li><a href="#4-validación-en-fronteras">4. Validación en fronteras</a></li>
+<li><a href="#5-subida-y-descarga-de-archivos">5. Subida y descarga de archivos</a><ul>
+<li><a href="#subida-post-apidesarrolloadjuntostipoid">Subida (POST /api/desarrollo/adjuntos/{tipo}/{id})</a></li>
+<li><a href="#descarga-get-apidesarrolloadjuntosaiddescargar">Descarga (GET /api/desarrollo/adjuntos/{aid}/descargar)</a></li>
+<li><a href="#facturas">Facturas</a></li>
+</ul>
+</li>
+<li><a href="#6-auditoría">6. Auditoría</a></li>
+<li><a href="#7-secretos-y-configuración">7. Secretos y configuración</a></li>
+<li><a href="#8-riesgos-residuales">8. Riesgos residuales</a></li>
+<li><a href="#9-checklist-antes-de-uso-real">9. Checklist antes de uso real</a></li>
+<li><a href="#10-respuesta-a-incidentes-mínimo-viable">10. Respuesta a incidentes (mínimo viable)</a></li>
+</ul></aside>
+  </div>
+
+  <script defer src="assets/mermaid.min.js"></script>
+  <script defer src="assets/docs.js"></script>
+</body>
+</html>

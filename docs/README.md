@@ -1,5 +1,8 @@
 # GCISCAR — Documentación técnica
 
+> **Versión HTML:** `docs/html/index.html` — navegación, índice lateral, búsqueda y diagramas
+> renderizados. Regenerar con `npm run docs`.
+
 Sistema de información interno para empleados (25–100 usuarios) que corre en **una sola PC
 local**, sin exposición a internet. Gestiona el ciclo completo de un proyecto comercial:
 

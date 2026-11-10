@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="GCISCAR — Documentación técnica — documentación técnica de GCISCAR">
+  <title>GCISCAR — Documentación técnica · GCISCAR</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#contenido">Saltar al contenido</a>
+
+  <header class="topbar">
+    <button class="menu-btn" type="button" data-menu aria-label="Abrir menú"
+            aria-expanded="false" aria-controls="sidebar">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round"/>
+      </svg>
+    </button>
+    <a class="brand" href="index.html">
+      <span class="logo" aria-hidden="true">G</span>
+      <span class="brand-text"><strong>GCISCAR</strong><small>Documentación técnica</small></span>
+    </a>
+    <div class="topbar-right">
+      <span class="pill">v0.1.0</span>
+      <span class="pill pill-soft">Sistema local</span>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Documentación">
+      <div class="nav-search">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/>
+          <path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <input type="search" placeholder="Filtrar secciones…" aria-label="Filtrar secciones"
+               data-nav-filter autocomplete="off">
+      </div>
+      <nav class="nav" aria-label="Documentos">
+        <p class="nav-heading">Documentación</p>
+        <a class="nav-link is-active" href="index.html" aria-current="page" data-keywords="inicio"><span class="nav-num">◎</span><span>Inicio</span></a>
+        <a class="nav-link" href="01-arquitectura.html" data-keywords="arquitectura"><span class="nav-num">01</span><span>Arquitectura</span></a>
+        <a class="nav-link" href="02-backend.html" data-keywords="backend"><span class="nav-num">02</span><span>Backend</span></a>
+        <a class="nav-link" href="03-frontend.html" data-keywords="frontend"><span class="nav-num">03</span><span>Frontend</span></a>
+        <a class="nav-link" href="04-base-de-datos.html" data-keywords="base de datos"><span class="nav-num">04</span><span>Base de datos</span></a>
+        <a class="nav-link" href="05-api-e-integraciones.html" data-keywords="api e integraciones"><span class="nav-num">05</span><span>API e integraciones</span></a>
+        <a class="nav-link" href="06-seguridad.html" data-keywords="seguridad"><span class="nav-num">06</span><span>Seguridad</span></a>
+        <a class="nav-link" href="07-flujos-y-procesos.html" data-keywords="flujos y procesos"><span class="nav-num">07</span><span>Flujos y procesos</span></a>
+        <a class="nav-link" href="08-infraestructura-y-despliegue.html" data-keywords="infraestructura"><span class="nav-num">08</span><span>Infraestructura</span></a>
+      </nav>
+      <div class="sidebar-foot">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span>GCISCAR v0.1.0<br>Actualizado 2026-11-10<br>
+        <a href="../README.md">Markdown fuente</a></span>
+      </div>
+    </aside>
+
+    <div class="scrim" data-scrim hidden></div>
+
+    <main class="content" id="contenido">
+      <nav class="crumbs" aria-label="Ruta"><a href="index.html">Documentación</a><span>/</span><span>Inicio</span></nav>
+      <article class="prose">
+<h1 id="gciscar-documentación-técnica">GCISCAR — Documentación técnica</h1>
+<blockquote>
+<p><strong>Versión HTML:</strong> <code>docs/html/index.html</code> — navegación, índice lateral, búsqueda y diagramas
+renderizados. Regenerar con <code>npm run docs</code>.</p>
+</blockquote>
+<p>Sistema de información interno para empleados (25–100 usuarios) que corre en <strong>una sola PC
+local</strong>, sin exposición a internet. Gestiona el ciclo completo de un proyecto comercial:</p>
+<pre><code>Ventas → Producción (Desarrollo) → Despacho
+             ↑
+      Tecnología (incidencias transversales)
+             ↑
+            RRHH (lectura global + gestión de usuarios)
+</code></pre>
+<h2 id="índice">Índice</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Documento</th>
+<th>Qué contiene</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="01-arquitectura.html">01 · Arquitectura</a></td>
+<td>Capas, reglas de dependencia, patrones (DDD funcional), decisiones y deuda técnica</td>
+</tr>
+<tr>
+<td><a href="02-backend.html">02 · Backend</a></td>
+<td>Módulos de dominio, reglas de negocio, máquinas de estado, routers, tests</td>
+</tr>
+<tr>
+<td><a href="03-frontend.html">03 · Frontend</a></td>
+<td>Atom Design, rutas, estado (Zustand + React Query), cliente API, design system</td>
+</tr>
+<tr>
+<td><a href="04-base-de-datos.html">04 · Base de datos</a></td>
+<td>Modelo entidad-relación, 17 tablas, índices, dinero en centavos, migraciones</td>
+</tr>
+<tr>
+<td><a href="05-api-e-integraciones.html">05 · API e integraciones</a></td>
+<td>56 endpoints, contratos, códigos HTTP, descargas, Swagger, integraciones</td>
+</tr>
+<tr>
+<td><a href="06-seguridad.html">06 · Seguridad</a></td>
+<td>JWT, Argon2, matriz de permisos, uploads, auditoría, riesgos y checklist</td>
+</tr>
+<tr>
+<td><a href="07-flujos-y-procesos.html">07 · Flujos y procesos</a></td>
+<td>Flujo de datos, secuencias, diagramas de estado y recorridos de usuario</td>
+</tr>
+<tr>
+<td><a href="08-infraestructura-y-despliegue.html">08 · Infraestructura y despliegue</a></td>
+<td>Dev, producción y .exe; build, instalador, backup, variables</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="ficha-rápida">Ficha rápida</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Aspecto</th>
+<th>Valor</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Nombre</td>
+<td>GCISCAR (<code>app_name</code>)</td>
+</tr>
+<tr>
+<td>Versión</td>
+<td>0.1.0</td>
+</tr>
+<tr>
+<td>Backend</td>
+<td>Python ≥ 3.12 · FastAPI · SQLAlchemy 2 · SQLite (WAL) · <code>uv</code></td>
+</tr>
+<tr>
+<td>Frontend</td>
+<td>React 19 · TypeScript · Vite 8 · Tailwind 4 · React Router 7 · TanStack Query 5 · Zustand 5</td>
+</tr>
+<tr>
+<td>PDFs</td>
+<td>reportlab, generados en el servidor</td>
+</tr>
+<tr>
+<td>Despliegue</td>
+<td><code>127.0.0.1:8000</code> (API + build) o <code>.exe</code> con ventana WebView2</td>
+</tr>
+<tr>
+<td>Pruebas</td>
+<td>192 tests de backend en verde (<code>uv run pytest -q</code>)</td>
+</tr>
+<tr>
+<td>Tablas</td>
+<td>17 (<code>users</code>, <code>customers</code>, <code>projects</code>, …)</td>
+</tr>
+<tr>
+<td>Endpoints</td>
+<td>56 bajo <code>/api</code></td>
+</tr>
+<tr>
+<td>Idioma de interfaz y documentos</td>
+<td>Español</td>
+</tr>
+<tr>
+<td>Facturación</td>
+<td>Registro interno; <strong>sin pasarela de pago</strong></td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="arranque-rápido">Arranque rápido</h2>
+<pre><code class="language-bash"># Desde la raíz del repo
+npm run api      # API en http://127.0.0.1:8000  (uvicorn --reload)
+npm run dev      # Frontend en http://127.0.0.1:5173 (Vite, proxy /api → 8000)
+
+npm run test     # pytest (backend)
+npm run lint     # oxlint + ruff
+npm run build    # typecheck + bundle del frontend
+npm run check    # build + lint + test
+npm run package  # frontend + .exe + instalador Inno Setup
+</code></pre>
+<h2 id="cuentas-semilla">Cuentas semilla</h2>
+<p>Contraseña común: <code>giscar1234</code> (cambiar en producción).</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Departamento</th>
+<th>Correo</th>
+<th>Nombre</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>RRHH (admin)</td>
+<td><code>rrhh@giscar.com</code></td>
+<td>Ana Reyes</td>
+</tr>
+<tr>
+<td>Ventas</td>
+<td><code>ventas@giscar.com</code></td>
+<td>Luis Pérez</td>
+</tr>
+<tr>
+<td>Producción</td>
+<td><code>produccion@giscar.com</code></td>
+<td>Marta Gómez</td>
+</tr>
+<tr>
+<td>Despacho</td>
+<td><code>despacho@giscar.com</code></td>
+<td>Carlos Díaz</td>
+</tr>
+<tr>
+<td>Tecnología</td>
+<td><code>tecnologia@giscar.com</code></td>
+<td>Sofía López</td>
+</tr>
+</tbody>
+</table></div>
+<blockquote>
+<p>El departamento se guarda como <code>desarrollo</code>; «Producción» es solo la etiqueta visible.
+El seed es idempotente y se ejecuta en cada arranque (<code>seed()</code> en <code>startup</code>).</p>
+</blockquote>
+<h2 id="documentos-fuente">Documentos fuente</h2>
+<ul>
+<li><code>AGENTS.md</code> — convenciones obligatorias (DDD, FP, frontend pasivo, Atom Design).</li>
+<li><code>.sisyphus/plans/giscar-sistema-informacion-plan.md</code> — plan aprobado por fases.</li>
+<li><code>README.md</code> (raíz) — guía operativa del repositorio.</li>
+<li><code>installer/README.md</code> — empaquetado y comportamiento en la PC destino.</li>
+</ul>
+<h2 id="nota-sobre-el-estado-del-repo">Nota sobre el estado del repo</h2>
+<p>La documentación describe el código <strong>tal como está hoy</strong>, incluidas las desviaciones
+respecto al plan (por ejemplo, <code>application/</code> está vacío y los routers orquestan
+directamente). Cada documento marca esas diferencias en su sección de deuda técnica.</p>
+      </article>
+      <footer class="page-foot">
+      <span></span>
+      <a class="page-link next" href="01-arquitectura.html"><small>Siguiente</small><span>Arquitectura →</span></a>
+        <p class="source">Documento generado desde
+          <a href="../README.md">README.md</a> · 2026-11-10</p>
+      </footer>
+    </main>
+
+    <aside class="toc" aria-label="En esta página"><p class="toc-title">En esta página</p><ul>
+<li><a href="#índice">Índice</a></li>
+<li><a href="#ficha-rápida">Ficha rápida</a></li>
+<li><a href="#arranque-rápido">Arranque rápido</a></li>
+<li><a href="#cuentas-semilla">Cuentas semilla</a></li>
+<li><a href="#documentos-fuente">Documentos fuente</a></li>
+<li><a href="#nota-sobre-el-estado-del-repo">Nota sobre el estado del repo</a></li>
+</ul></aside>
+  </div>
+
+  <script defer src="assets/mermaid.min.js"></script>
+  <script defer src="assets/docs.js"></script>
+</body>
+</html>

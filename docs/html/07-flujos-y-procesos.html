@@ -1,0 +1,652 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="07 · Flujos y procesos — documentación técnica de GCISCAR">
+  <title>07 · Flujos y procesos · GCISCAR</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#contenido">Saltar al contenido</a>
+
+  <header class="topbar">
+    <button class="menu-btn" type="button" data-menu aria-label="Abrir menú"
+            aria-expanded="false" aria-controls="sidebar">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round"/>
+      </svg>
+    </button>
+    <a class="brand" href="index.html">
+      <span class="logo" aria-hidden="true">G</span>
+      <span class="brand-text"><strong>GCISCAR</strong><small>Documentación técnica</small></span>
+    </a>
+    <div class="topbar-right">
+      <span class="pill">v0.1.0</span>
+      <span class="pill pill-soft">Sistema local</span>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Documentación">
+      <div class="nav-search">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/>
+          <path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <input type="search" placeholder="Filtrar secciones…" aria-label="Filtrar secciones"
+               data-nav-filter autocomplete="off">
+      </div>
+      <nav class="nav" aria-label="Documentos">
+        <p class="nav-heading">Documentación</p>
+        <a class="nav-link" href="index.html" data-keywords="inicio"><span class="nav-num">◎</span><span>Inicio</span></a>
+        <a class="nav-link" href="01-arquitectura.html" data-keywords="arquitectura"><span class="nav-num">01</span><span>Arquitectura</span></a>
+        <a class="nav-link" href="02-backend.html" data-keywords="backend"><span class="nav-num">02</span><span>Backend</span></a>
+        <a class="nav-link" href="03-frontend.html" data-keywords="frontend"><span class="nav-num">03</span><span>Frontend</span></a>
+        <a class="nav-link" href="04-base-de-datos.html" data-keywords="base de datos"><span class="nav-num">04</span><span>Base de datos</span></a>
+        <a class="nav-link" href="05-api-e-integraciones.html" data-keywords="api e integraciones"><span class="nav-num">05</span><span>API e integraciones</span></a>
+        <a class="nav-link" href="06-seguridad.html" data-keywords="seguridad"><span class="nav-num">06</span><span>Seguridad</span></a>
+        <a class="nav-link is-active" href="07-flujos-y-procesos.html" aria-current="page" data-keywords="flujos y procesos"><span class="nav-num">07</span><span>Flujos y procesos</span></a>
+        <a class="nav-link" href="08-infraestructura-y-despliegue.html" data-keywords="infraestructura"><span class="nav-num">08</span><span>Infraestructura</span></a>
+      </nav>
+      <div class="sidebar-foot">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span>GCISCAR v0.1.0<br>Actualizado 2026-11-10<br>
+        <a href="../07-flujos-y-procesos.md">Markdown fuente</a></span>
+      </div>
+    </aside>
+
+    <div class="scrim" data-scrim hidden></div>
+
+    <main class="content" id="contenido">
+      <nav class="crumbs" aria-label="Ruta"><a href="index.html">Documentación</a><span>/</span><span>Flujos y procesos</span></nav>
+      <article class="prose">
+<h1 id="07-flujos-y-procesos">07 · Flujos y procesos</h1>
+<h2 id="1-flujo-de-datos">1. Flujo de datos</h2>
+<div class="mermaid">
+flowchart TB
+    subgraph UI["Frontend (React)"]
+        P["Página / componente"]
+        Q["TanStack Query<br/>caché + mutaciones"]
+        C["api/client.ts<br/>Bearer + errores"]
+        Z["Zustand<br/>token + user"]
+    end
+
+    subgraph BE["Backend (FastAPI)"]
+        R["Router delgado"]
+        S["Schemas Pydantic"]
+        D["Dominio puro<br/>reglas + Result"]
+        RP["Repositorios"]
+        M["Mappers"]
+    end
+
+    DB[("SQLite (WAL)")]
+    FS[("uploads/")]
+
+    P -- "useQuery / useMutation" --> Q
+    Q --> C
+    Z -- "token" --> C
+    C -- "HTTP /api" --> R
+    R --> S
+    S --> R
+    R --> RP
+    RP --> DB
+    RP --> M
+    M --> D
+    R --> D
+    D -- "Ok / Err" --> R
+    R -- "JSON ya calculado<br/>pagado, saldo, acciones, grupos" --> Q
+    Q -- "datos" --> P
+    R -- "multipart" --> FS
+    R -- "FileResponse" --> C
+</div>
+<p>Principios del flujo:</p>
+<ol>
+<li><strong>El cliente no deriva reglas.</strong> Pide datos y acciones; el servidor decide.</li>
+<li><strong>Una sola fuente de verdad</strong> por agregado (<code>Project</code>).</li>
+<li><strong>Transacciones cortas</strong>: cargar → validar en dominio → escribir → <code>commit</code>.</li>
+<li><strong>Invalidación explícita de caché</strong> tras cada mutación, incluyendo módulos vecinos.</li>
+</ol>
+<h2 id="2-ciclo-de-una-petición">2. Ciclo de una petición</h2>
+<div class="mermaid">
+sequenceDiagram
+    participant UI as React
+    participant API as FastAPI
+    participant AUTH as security/deps
+    participant REPO as Repositorio
+    participant DOM as Dominio
+    participant DB as SQLite
+
+    UI->>API: HTTP + Bearer
+    API->>AUTH: get_current_user
+    AUTH->>REPO: usuario por sub
+    REPO->>DB: SELECT
+    AUTH-->>API: User activo
+    API->>AUTH: require_department
+    API->>REPO: cargar agregado
+    API->>DOM: función pura (command)
+    alt Err(DomainError)
+        DOM-->>API: error de negocio
+        API-->>UI: 4xx {detail}
+    else Ok(nuevo estado)
+        DOM-->>API: valor inmutable
+        API->>REPO: persistir
+        REPO->>DB: INSERT/UPDATE
+        API->>DB: commit
+        API-->>UI: 2xx JSON
+        UI->>UI: invalidar queries y repintar
+    end
+</div>
+<h2 id="3-máquinas-de-estado">3. Máquinas de estado</h2>
+<h3 id="31-ventas">3.1 Ventas</h3>
+<div class="mermaid">
+stateDiagram-v2
+    [*] --> levantamiento
+    levantamiento --> cobrado_50: pago parcial
+    levantamiento --> cobrado_100: pago total
+    cobrado_50 --> cobrado_100: completa el total
+    cobrado_50 --> enviado_desarrollo: ≥ 50 % + pasar
+    cobrado_100 --> enviado_desarrollo: pasar
+    enviado_desarrollo --> cerrado: liquidación en Despacho
+    cerrado --> [*]
+</div>
+<ul>
+<li>No existe estado <code>borrador</code> ni guardado de borradores: el proyecto nace en
+  <code>levantamiento</code> cuando Ventas envía el formulario completo.</li>
+<li><code>cobrado_50</code> significa «hay algún pago parcial», no exactamente 50 %.</li>
+<li><code>cerrado</code> se alcanza al liquidar el saldo en Despacho (o al entregar si Ventas seguía
+  en <code>enviado_desarrollo</code>).</li>
+</ul>
+<h3 id="32-producción-desarrollo">3.2 Producción (Desarrollo)</h3>
+<div class="mermaid">
+stateDiagram-v2
+    [*] --> pendiente
+    pendiente --> en_planificacion: crear plan
+    pendiente --> cancelado: cancelar
+    en_planificacion --> en_desarrollo: iniciar
+    en_planificacion --> cancelado: cancelar
+    en_desarrollo --> completado: completar (todas las fases)
+    en_desarrollo --> cancelado: cancelar
+    completado --> enviado_despacho: pasar a Despacho
+    cancelado --> [*]
+    enviado_despacho --> [*]
+</div>
+<ul>
+<li>Solo se planifica/avanza cuando Ventas ya envió el proyecto.</li>
+<li>Fases y avances solo se editan en <code>en_desarrollo</code>.</li>
+<li>La cancelación exige motivo + informe ≥ 30 caracteres y queda en el expediente.</li>
+</ul>
+<h3 id="33-despacho">3.3 Despacho</h3>
+<div class="mermaid">
+stateDiagram-v2
+    [*] --> pendiente
+    pendiente --> pendiente_cobro: llega con saldo
+    pendiente --> pendiente_entrega: llega sin saldo
+    pendiente_cobro --> pendiente_entrega: liquidar saldo
+    pendiente_cobro --> negado: negar
+    pendiente_entrega --> negado: negar
+    pendiente_entrega --> entregado: confirmar entrega
+    negado --> pendiente_entrega: resolver (sin saldo)
+    negado --> pendiente_cobro: resolver (con saldo)
+    negado --> entregado: entregar tras resolver
+    entregado --> [*]
+</div>
+<ul>
+<li><code>entregado</code> exige saldo 0.</li>
+<li><code>negado</code> vuelve a la cola de pendientes (<code>cerrados</code> incluye <code>negado</code> y <code>entregado</code>).</li>
+</ul>
+<h3 id="34-fases-de-producción">3.4 Fases de Producción</h3>
+<div class="mermaid">
+stateDiagram-v2
+    [*] --> pendiente
+    pendiente --> en_curso: iniciar fase
+    en_curso --> completada: completar
+    completada --> [*]
+</div>
+<h3 id="35-incidencias">3.5 Incidencias</h3>
+<div class="mermaid">
+stateDiagram-v2
+    [*] --> abierta
+    abierta --> en_proceso: tomar / asignar
+    abierta --> cerrada: cerrar sin resolver
+    en_proceso --> resuelta: reporte de resolución
+    en_proceso --> cerrada: cerrar
+    resuelta --> cerrada: cerrar
+    cerrada --> [*]
+</div>
+<p><code>POST /reporte</code> hace automáticamente <code>abierta → en_proceso → resuelta</code> si hacía falta.</p>
+<h2 id="4-recorrido-completo-de-un-proyecto">4. Recorrido completo de un proyecto</h2>
+<div class="mermaid">
+flowchart LR
+    A["Ventas<br/>crea cliente"] --> B["Ventas<br/>crea proyecto<br/>PRJ-2026-0001"]
+    B --> C{"¿Cobro?"}
+    C -- "parcial" --> D["cobrado_50<br/>+ factura"]
+    C -- "total" --> E["cobrado_100<br/>+ factura"]
+    D --> F["enviado_desarrollo"]
+    E --> F
+    F --> G["Producción<br/>plan + fases + equipo"]
+    G --> H["en_desarrollo<br/>avances + adjuntos"]
+    H --> I{"¿Se cancela?"}
+    I -- "sí" --> J["cancelado<br/>informe obligatorio"]
+    I -- "no" --> K["completado<br/>(fases cerradas)"]
+    K --> L["enviado_despacho"]
+    L --> M{"¿Saldo?"}
+    M -- "sí" --> N["pendiente_cobro<br/>liquidar"]
+    M -- "no" --> O["pendiente_entrega"]
+    N --> O
+    O --> P{"Cliente"}
+    P -- "acepta" --> Q["entregado<br/>Ventas: cerrado"]
+    P -- "rechaza" --> R["negado<br/>motivo + detalle"]
+    R --> O
+</div>
+<h2 id="5-secuencias-por-caso-de-uso">5. Secuencias por caso de uso</h2>
+<h3 id="51-login-y-enrutado-por-rol">5.1 Login y enrutado por rol</h3>
+<div class="mermaid">
+sequenceDiagram
+    actor U as Usuario
+    participant L as LoginPage
+    participant API as /api/auth/login
+    participant ST as Zustand
+    participant R as Router
+
+    U->>L: email + contraseña
+    L->>API: POST
+    API-->>L: token + user
+    L->>ST: setAuth(token, user)
+    L->>R: navigate('/panel')
+    R->>R: PanelRedirect según departamento
+    R-->>U: /ventas · /desarrollo · /despacho · /tecnologia · /rrhh
+</div>
+<h3 id="52-alta-de-cliente-y-proyecto-ventas">5.2 Alta de cliente y proyecto (Ventas)</h3>
+<div class="mermaid">
+sequenceDiagram
+    participant V as Ventas
+    participant API as /api/ventas
+    participant DOM as Dominio
+    participant DB as SQLite
+
+    V->>API: POST /clientes (todos los datos)
+    API->>DOM: create_customer
+    DOM-->>API: Ok | Err
+    API->>DB: INSERT customer
+    API-->>V: 201
+
+    V->>API: POST /proyectos
+    API->>DB: verificar customer
+    API->>DOM: create_project (título derivado, desc ≥ 20, monto > 0)
+    API->>DB: INSERT project + código PRJ-YYYY-NNNN
+    API-->>V: ProjectOut
+</div>
+<h3 id="53-cobro-y-factura-ventas">5.3 Cobro y factura (Ventas)</h3>
+<div class="mermaid">
+sequenceDiagram
+    participant V as Ventas
+    participant API as /api/ventas
+    participant DOM as Dominio
+    participant DB as SQLite
+
+    V->>API: POST /proyectos/{id}/pagos {monto, método}
+    API->>DB: proyecto + pagos previos
+    API->>DOM: create_payment (saldo, porcentaje)
+    alt excede saldo
+        DOM-->>API: Err
+        API-->>V: 422
+    else válido
+        API->>DOM: set_estado_ventas (cobrado_50/100)
+        API->>DB: INSERT payment + UPDATE project
+        API->>DOM: create_invoice (snapshot)
+        API->>DB: INSERT invoice FAC-...
+        API->>DB: audit pago + factura
+        API->>DB: commit
+        API-->>V: 201 PaymentOut
+        V->>API: GET /facturas/{id}/pdf
+        API-->>V: application/pdf
+    end
+</div>
+<h3 id="54-plan-fases-y-avance-producción">5.4 Plan, fases y avance (Producción)</h3>
+<div class="mermaid">
+sequenceDiagram
+    participant P as Producción
+    participant API as /api/desarrollo
+    participant DOM as Dominio
+    participant DB as SQLite
+
+    P->>API: POST /proyectos/{id}/plan
+    API->>DOM: create_plan + create_phase × N
+    API->>DB: INSERT plan, fases, miembros
+    API->>DOM: estado → en_planificacion
+    API-->>P: 201
+
+    P->>API: POST /proyectos/{id}/iniciar
+    API->>DOM: en_planificacion → en_desarrollo
+    API-->>P: estado
+
+    P->>API: POST /fases/{fid}/estado {target}
+    API->>DOM: set_phase_state
+    API-->>P: PhaseOut
+
+    P->>API: POST /avance {porcentaje, notas}
+    API->>DOM: record_progress
+    API-->>P: ProgressOut
+
+    P->>API: POST /completar
+    API->>DOM: validar fases
+    alt fases abiertas
+        API-->>P: 422 con nombres
+    else todas completadas
+        API->>DOM: en_desarrollo → completado
+        API-->>P: estado
+    end
+</div>
+<h3 id="55-liquidación-y-entrega-despacho">5.5 Liquidación y entrega (Despacho)</h3>
+<div class="mermaid">
+sequenceDiagram
+    participant D as Despacho
+    participant API as /api/despacho
+    participant DOM as Dominio
+    participant DB as SQLite
+
+    API-->>D: tablero {pendientes, cerrados} + acciones por proyecto
+
+    D->>API: POST /proyectos/{id}/liquidar
+    API->>DOM: create_payment(saldo) + ventas → cerrado
+    API->>DOM: pendiente_cobro → pendiente_entrega
+    API->>DOM: create_invoice (snapshot)
+    API->>DB: INSERT payment + invoice + UPDATE project
+    API->>DB: audit pago + factura
+    API-->>D: 201 + factura (PDF descargable)
+
+    D->>API: POST /proyectos/{id}/confirmar-entrega
+    API->>DOM: puede_entregar (saldo 0)
+    API->>DB: INSERT dispatch + UPDATE project
+    API->>DB: audit entrega_confirmada
+    API-->>D: 201 acta interna
+
+    Note over D,API: Si el cliente rechaza:
+    D->>API: POST /negar {motivo, detalle}
+    API->>DOM: → negado
+    D->>API: POST /resolver-negacion
+    API->>DOM: → pendiente_cobro / pendiente_entrega
+</div>
+<h3 id="56-incidencia-cualquier-departamento-tecnología">5.6 Incidencia (cualquier departamento → Tecnología)</h3>
+<div class="mermaid">
+sequenceDiagram
+    participant U as Cualquier depto
+    participant T as Tecnología
+    participant API as /api/tecnologia
+    participant DB as SQLite
+
+    U->>API: POST /incidencias
+    API->>DB: INSERT INC-YYYY-NNNN (orden_llegada)
+    API-->>U: 201
+
+    T->>API: GET /incidencias
+    API-->>T: cola ordenada + resumen por estado
+
+    T->>API: POST /incidencias/{id}/asignar {user_ids}
+    T->>API: POST /incidencias/{id}/estado {target}
+    T->>API: POST /incidencias/{id}/reporte
+    API->>DB: INSERT report + estado resuelta
+    T->>API: POST /adjuntos/incidencia/{id} (evidencia)
+    API->>DB: INSERT attachment + archivo en uploads/
+</div>
+<h3 id="57-adjunto">5.7 Adjunto</h3>
+<div class="mermaid">
+sequenceDiagram
+    participant UI
+    participant API as /api/desarrollo
+    participant FS as uploads/
+
+    UI->>API: multipart file
+    API->>API: validar tipo, MIME, tamaño, nombre
+    API->>FS: guardar como id_nombre
+    API-->>UI: 201 AttachmentOut
+
+    UI->>API: GET /adjuntos/{id}/descargar (Bearer)
+    API->>FS: leer bytes
+    API-->>UI: FileResponse
+    Note over UI: el cliente crea un blob y dispara la descarga
+</div>
+<h3 id="58-búsqueda-global">5.8 Búsqueda global</h3>
+<div class="mermaid">
+sequenceDiagram
+    participant U as Usuario
+    participant B as Buscador
+    participant API as /api/buscar
+    participant DOM as dominio/search
+
+    U->>B: escribe ≥ 2 caracteres
+    B->>B: debounce 300 ms
+    B->>API: GET ?q=
+    API->>DOM: validar + tipos_buscables(departamento)
+    API->>DOM: buscar_* por categoría permitida
+    DOM-->>API: resultados recortados (8/tipo)
+    API-->>B: {tipos, resultados}
+    B-->>U: grupos con navegación
+</div>
+<h2 id="6-flujo-de-usuarios-por-rol">6. Flujo de usuarios por rol</h2>
+<h3 id="61-vista-general">6.1 Vista general</h3>
+<div class="mermaid">
+flowchart TD
+    A["Login"] --> B{"Rol"}
+    B --> V["Ventas"]
+    B --> P["Producción"]
+    B --> D["Despacho"]
+    B --> T["Tecnología"]
+    B --> R["RRHH"]
+
+    V --> V1["Clientes"]
+    V --> V2["Proyectos / levantamiento"]
+    V --> V3["Cobros + factura PDF"]
+    V --> V4["Enviar a Producción"]
+    V --> V5["Reportar incidencia"]
+
+    P --> P1["Tablero recibidos/en curso/historial"]
+    P --> P2["Plan + fases + equipo"]
+    P --> P3["Avances + adjuntos"]
+    P --> P4["Completar / enviar a Despacho"]
+    P --> P5["Cancelar con informe"]
+
+    D --> D1["Cola pendientes/cerrados"]
+    D --> D2["Contacto y saldo"]
+    D --> D3["Liquidar"]
+    D --> D4["Confirmar entrega / negar"]
+
+    T --> T1["Cola por prioridad + llegada"]
+    T --> T2["Asignar técnicos"]
+    T --> T3["Reporte + evidencia"]
+
+    R --> R1["Panel global (KPIs)"]
+    R --> R2["Usuarios: alta/edición/bloqueo"]
+    R --> R3["Proyectos globales"]
+    R --> R4["Bitácora"]
+</div>
+<h3 id="62-ventas">6.2 Ventas</h3>
+<ol>
+<li>Entra y ve la lista de proyectos y clientes.</li>
+<li>Da de alta el cliente (todos los datos obligatorios).</li>
+<li>Crea el proyecto con monto y detalles.</li>
+<li>Registra el pago (50 %, 100 % o parcial); el sistema emite factura PDF.</li>
+<li>Cuando el cobro alcanza el 50 %, aparece «Enviar a Producción».</li>
+<li>Tras enviarlo, deja de gestionarlo (sus acciones quedan vacías).</li>
+<li>En cualquier momento puede reportar una incidencia de Tecnología.</li>
+</ol>
+<h3 id="63-producción">6.3 Producción</h3>
+<ol>
+<li>Ve columnas <strong>Recibidos</strong>, <strong>En curso</strong>, <strong>Historial</strong>.</li>
+<li>En «Recibidos» crea el plan, fases y asigna miembros de Producción.</li>
+<li>Inicia el desarrollo.</li>
+<li>Actualiza fases y registra avances con notas.</li>
+<li>Adjunta documentos/imágenes al proyecto, fases o plan.</li>
+<li>Cuando todas las fases están completadas, marca «Completado».</li>
+<li>Envía a Despacho (el saldo decide si espera cobro o entrega).</li>
+<li>Si el proyecto se frustra, cancela con motivo + informe.</li>
+</ol>
+<h3 id="64-despacho">6.4 Despacho</h3>
+<ol>
+<li>Ve <strong>Pendientes</strong> y <strong>Cerrados</strong>.</li>
+<li>Abre el proyecto y contacta al cliente con los datos del levantamiento.</li>
+<li>Si hay saldo, «Liquidar saldo» (cobro total del resto, genera factura PDF).</li>
+<li>Con saldo 0, «Confirmar entrega»: fecha, destinatario, detalle.</li>
+<li>Si el cliente rechaza, «Negar» con motivo y detalle.</li>
+<li>Una negación se puede resolver y volver a la cola.</li>
+</ol>
+<h3 id="65-tecnología">6.5 Tecnología</h3>
+<ol>
+<li>Ve la cola ordenada por prioridad y luego llegada.</li>
+<li>Consulta el resumen por estado.</li>
+<li>Asigna uno o varios técnicos.</li>
+<li>Mueve estado (<code>abierta → en_proceso</code>).</li>
+<li>Registra diagnóstico, solución y horas; pasa a <code>resuelta</code>.</li>
+<li>Adjunta evidencia fotográfica a la incidencia.</li>
+<li>Cierra (<code>resuelta → cerrada</code>).</li>
+</ol>
+<h3 id="66-rrhh">6.6 RRHH</h3>
+<ol>
+<li>Panel general con KPIs de todos los departamentos.</li>
+<li>Usuarios: alta, edición, cambio de departamento, bloqueo/desactivación,
+   restablecimiento de contraseña.</li>
+<li>Proyectos: vista global de solo lectura.</li>
+<li>Bitácora: últimas acciones sensibles.</li>
+<li>Puede reportar incidencias.</li>
+</ol>
+<h2 id="7-flujos-alternativos-y-errores">7. Flujos alternativos y errores</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Situación</th>
+<th>Comportamiento</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Credenciales inválidas</td>
+<td>401, mensaje genérico, auditoría <code>login_fallido</code></td>
+</tr>
+<tr>
+<td>Usuario bloqueado/desactivado</td>
+<td>403 con motivo; el token deja de servir</td>
+</tr>
+<tr>
+<td>Token expirado</td>
+<td>401 → el cliente limpia sesión y vuelve a login</td>
+</tr>
+<tr>
+<td>Intento de acción de otro módulo</td>
+<td>403 con departamento requerido</td>
+</tr>
+<tr>
+<td>Proyecto sin cliente válido</td>
+<td>404 al crear</td>
+</tr>
+<tr>
+<td>Cliente con proyectos</td>
+<td>422 al intentar borrarlo</td>
+</tr>
+<tr>
+<td>Descripción corta / monto ≤ 0</td>
+<td>422</td>
+</tr>
+<tr>
+<td>Pago mayor al saldo</td>
+<td>422</td>
+</tr>
+<tr>
+<td>Pasar a Producción sin 50 %</td>
+<td>422</td>
+</tr>
+<tr>
+<td>Completar con fases abiertas</td>
+<td>422 con lista de pendientes</td>
+</tr>
+<tr>
+<td>Cancelar sin informe suficiente</td>
+<td>422</td>
+</tr>
+<tr>
+<td>Entregar con saldo</td>
+<td>422 con el saldo formateado</td>
+</tr>
+<tr>
+<td>Incidencia cerrada → asignar</td>
+<td>422</td>
+</tr>
+<tr>
+<td>Archivo &gt; 20 MB o MIME no permitido</td>
+<td>422</td>
+</tr>
+<tr>
+<td>Archivo físico desaparecido</td>
+<td>404 al descargar</td>
+</tr>
+<tr>
+<td>Servidor caído</td>
+<td><code>ApiError(0, 'No hay conexión con el servidor')</code></td>
+</tr>
+<tr>
+<td>Plan ya creado</td>
+<td>409</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="8-trazabilidad">8. Trazabilidad</h2>
+<ul>
+<li>Cada acción sensible deja una fila en <code>audit_logs</code> (best-effort).</li>
+<li>Cada proyecto conserva su historia: pagos, facturas, plan, fases, avances, miembros,
+  cancelación, entrega y negación.</li>
+<li>Los adjuntos son polimórficos y cuelgan de la entidad correspondiente.</li>
+<li>RRHH es el único que puede leer la bitácora completa.</li>
+</ul>
+      </article>
+      <footer class="page-foot">
+      <a class="page-link prev" href="06-seguridad.html"><small>Anterior</small><span>← Seguridad</span></a>
+      <a class="page-link next" href="08-infraestructura-y-despliegue.html"><small>Siguiente</small><span>Infraestructura →</span></a>
+        <p class="source">Documento generado desde
+          <a href="../07-flujos-y-procesos.md">07-flujos-y-procesos.md</a> · 2026-11-10</p>
+      </footer>
+    </main>
+
+    <aside class="toc" aria-label="En esta página"><p class="toc-title">En esta página</p><ul>
+<li><a href="#1-flujo-de-datos">1. Flujo de datos</a></li>
+<li><a href="#2-ciclo-de-una-petición">2. Ciclo de una petición</a></li>
+<li><a href="#3-máquinas-de-estado">3. Máquinas de estado</a><ul>
+<li><a href="#31-ventas">3.1 Ventas</a></li>
+<li><a href="#32-producción-desarrollo">3.2 Producción (Desarrollo)</a></li>
+<li><a href="#33-despacho">3.3 Despacho</a></li>
+<li><a href="#34-fases-de-producción">3.4 Fases de Producción</a></li>
+<li><a href="#35-incidencias">3.5 Incidencias</a></li>
+</ul>
+</li>
+<li><a href="#4-recorrido-completo-de-un-proyecto">4. Recorrido completo de un proyecto</a></li>
+<li><a href="#5-secuencias-por-caso-de-uso">5. Secuencias por caso de uso</a><ul>
+<li><a href="#51-login-y-enrutado-por-rol">5.1 Login y enrutado por rol</a></li>
+<li><a href="#52-alta-de-cliente-y-proyecto-ventas">5.2 Alta de cliente y proyecto (Ventas)</a></li>
+<li><a href="#53-cobro-y-factura-ventas">5.3 Cobro y factura (Ventas)</a></li>
+<li><a href="#54-plan-fases-y-avance-producción">5.4 Plan, fases y avance (Producción)</a></li>
+<li><a href="#55-liquidación-y-entrega-despacho">5.5 Liquidación y entrega (Despacho)</a></li>
+<li><a href="#56-incidencia-cualquier-departamento-tecnología">5.6 Incidencia (cualquier departamento → Tecnología)</a></li>
+<li><a href="#57-adjunto">5.7 Adjunto</a></li>
+<li><a href="#58-búsqueda-global">5.8 Búsqueda global</a></li>
+</ul>
+</li>
+<li><a href="#6-flujo-de-usuarios-por-rol">6. Flujo de usuarios por rol</a><ul>
+<li><a href="#61-vista-general">6.1 Vista general</a></li>
+<li><a href="#62-ventas">6.2 Ventas</a></li>
+<li><a href="#63-producción">6.3 Producción</a></li>
+<li><a href="#64-despacho">6.4 Despacho</a></li>
+<li><a href="#65-tecnología">6.5 Tecnología</a></li>
+<li><a href="#66-rrhh">6.6 RRHH</a></li>
+</ul>
+</li>
+<li><a href="#7-flujos-alternativos-y-errores">7. Flujos alternativos y errores</a></li>
+<li><a href="#8-trazabilidad">8. Trazabilidad</a></li>
+</ul></aside>
+  </div>
+
+  <script defer src="assets/mermaid.min.js"></script>
+  <script defer src="assets/docs.js"></script>
+</body>
+</html>

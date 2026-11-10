@@ -366,7 +366,7 @@ sequenceDiagram
 
     UI->>API: multipart file
     API->>API: validar tipo, MIME, tamaño, nombre
-    API->>FS: escribir <id>_<nombre>
+    API->>FS: guardar como id_nombre
     API-->>UI: 201 AttachmentOut
 
     UI->>API: GET /adjuntos/{id}/descargar (Bearer)

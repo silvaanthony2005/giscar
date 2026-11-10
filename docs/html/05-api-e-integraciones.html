@@ -1,0 +1,997 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="05 · API e integraciones — documentación técnica de GCISCAR">
+  <title>05 · API e integraciones · GCISCAR</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#contenido">Saltar al contenido</a>
+
+  <header class="topbar">
+    <button class="menu-btn" type="button" data-menu aria-label="Abrir menú"
+            aria-expanded="false" aria-controls="sidebar">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round"/>
+      </svg>
+    </button>
+    <a class="brand" href="index.html">
+      <span class="logo" aria-hidden="true">G</span>
+      <span class="brand-text"><strong>GCISCAR</strong><small>Documentación técnica</small></span>
+    </a>
+    <div class="topbar-right">
+      <span class="pill">v0.1.0</span>
+      <span class="pill pill-soft">Sistema local</span>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Documentación">
+      <div class="nav-search">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/>
+          <path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <input type="search" placeholder="Filtrar secciones…" aria-label="Filtrar secciones"
+               data-nav-filter autocomplete="off">
+      </div>
+      <nav class="nav" aria-label="Documentos">
+        <p class="nav-heading">Documentación</p>
+        <a class="nav-link" href="index.html" data-keywords="inicio"><span class="nav-num">◎</span><span>Inicio</span></a>
+        <a class="nav-link" href="01-arquitectura.html" data-keywords="arquitectura"><span class="nav-num">01</span><span>Arquitectura</span></a>
+        <a class="nav-link" href="02-backend.html" data-keywords="backend"><span class="nav-num">02</span><span>Backend</span></a>
+        <a class="nav-link" href="03-frontend.html" data-keywords="frontend"><span class="nav-num">03</span><span>Frontend</span></a>
+        <a class="nav-link" href="04-base-de-datos.html" data-keywords="base de datos"><span class="nav-num">04</span><span>Base de datos</span></a>
+        <a class="nav-link is-active" href="05-api-e-integraciones.html" aria-current="page" data-keywords="api e integraciones"><span class="nav-num">05</span><span>API e integraciones</span></a>
+        <a class="nav-link" href="06-seguridad.html" data-keywords="seguridad"><span class="nav-num">06</span><span>Seguridad</span></a>
+        <a class="nav-link" href="07-flujos-y-procesos.html" data-keywords="flujos y procesos"><span class="nav-num">07</span><span>Flujos y procesos</span></a>
+        <a class="nav-link" href="08-infraestructura-y-despliegue.html" data-keywords="infraestructura"><span class="nav-num">08</span><span>Infraestructura</span></a>
+      </nav>
+      <div class="sidebar-foot">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span>GCISCAR v0.1.0<br>Actualizado 2026-11-10<br>
+        <a href="../05-api-e-integraciones.md">Markdown fuente</a></span>
+      </div>
+    </aside>
+
+    <div class="scrim" data-scrim hidden></div>
+
+    <main class="content" id="contenido">
+      <nav class="crumbs" aria-label="Ruta"><a href="index.html">Documentación</a><span>/</span><span>API e integraciones</span></nav>
+      <article class="prose">
+<h1 id="05-api-e-integraciones">05 · API e integraciones</h1>
+<h2 id="1-generalidades">1. Generalidades</h2>
+<ul>
+<li><strong>Base URL</strong>: <code>http://127.0.0.1:8000</code></li>
+<li><strong>Prefijo</strong>: todos los endpoints de negocio cuelgan de <code>/api</code>.</li>
+<li><strong>Formato</strong>: JSON UTF-8; subidas <code>multipart/form-data</code>.</li>
+<li><strong>Autenticación</strong>: <code>Authorization: Bearer &lt;JWT&gt;</code> en todas las rutas salvo
+  <code>POST /api/auth/login</code> y <code>GET /api/health</code>.</li>
+<li><strong>Documentación viva</strong>:</li>
+<li>Swagger UI: <code>http://127.0.0.1:8000/docs</code></li>
+<li>OpenAPI JSON: <code>http://127.0.0.1:8000/openapi.json</code></li>
+<li><strong>Healthcheck</strong>: <code>GET /api/health → {"status":"ok"}</code> (lo usa el lanzador del <code>.exe</code>).</li>
+<li><strong>CORS</strong>: solo para desarrollo (<code>http://127.0.0.1:5173</code>, <code>http://localhost:5173</code>).
+  En producción el frontend se sirve desde el mismo origen.</li>
+<li><strong>Errores</strong>: <code>{"detail": "&lt;mensaje en español&gt;"}</code>. Ver tabla de códigos en
+  <a href="02-backend.html#53-errores-y-códigos-http">02 · Backend</a>.</li>
+</ul>
+<blockquote>
+<p><code>require_department</code> deja pasar siempre a RRHH (<code>User.can_access</code>). En las tablas de
+«Quién» se indica el departamento funcional; <strong>RRHH puede invocar todas las rutas</strong>.</p>
+</blockquote>
+<h2 id="2-resumen-de-recursos">2. Resumen de recursos</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Recurso</th>
+<th>Endpoints</th>
+<th>Quién</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Salud</td>
+<td>1</td>
+<td>Público</td>
+</tr>
+<tr>
+<td>Autenticación y usuarios</td>
+<td>5</td>
+<td>Público / autenticado / RRHH</td>
+</tr>
+<tr>
+<td>Panel (contadores)</td>
+<td>1</td>
+<td>Autenticado</td>
+</tr>
+<tr>
+<td>Búsqueda global</td>
+<td>1</td>
+<td>Autenticado</td>
+</tr>
+<tr>
+<td>Ventas</td>
+<td>12</td>
+<td>Ventas</td>
+</tr>
+<tr>
+<td>Producción/Desarrollo</td>
+<td>18</td>
+<td>Desarrollo (+ adjuntos a 4 departamentos)</td>
+</tr>
+<tr>
+<td>Despacho</td>
+<td>7</td>
+<td>Despacho</td>
+</tr>
+<tr>
+<td>Tecnología</td>
+<td>7</td>
+<td>Todos reportan; Tecnología gestiona</td>
+</tr>
+<tr>
+<td>RRHH</td>
+<td>4</td>
+<td>RRHH</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="3-salud">3. Salud</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Método</th>
+<th>Ruta</th>
+<th>Respuesta</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/api/health</code></td>
+<td><code>{"status":"ok"}</code></td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="4-autenticación-y-usuarios">4. Autenticación y usuarios</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Método</th>
+<th>Ruta</th>
+<th>Quién</th>
+<th>Cuerpo / query</th>
+<th>Respuesta</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>POST</td>
+<td><code>/api/auth/login</code></td>
+<td>Público</td>
+<td><code>{email, password}</code></td>
+<td><code>{access_token, token_type, user}</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/auth/me</code></td>
+<td>Autenticado</td>
+<td>—</td>
+<td><code>UserOut</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/auth/usuarios</code></td>
+<td>RRHH</td>
+<td>—</td>
+<td><code>UserOut[]</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/auth/usuarios</code></td>
+<td>RRHH</td>
+<td><code>CreateUserRequest</code></td>
+<td><code>201 UserOut</code></td>
+</tr>
+<tr>
+<td>PATCH</td>
+<td><code>/api/auth/usuarios/{user_id}</code></td>
+<td>RRHH</td>
+<td><code>UpdateUserRequest</code></td>
+<td><code>UserOut</code></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="post-apiauthlogin"><code>POST /api/auth/login</code></h3>
+<pre><code class="language-json">{ &quot;email&quot;: &quot;ventas@giscar.com&quot;, &quot;password&quot;: &quot;giscar1234&quot; }
+</code></pre>
+<pre><code class="language-json">{
+  &quot;access_token&quot;: &quot;eyJhbGciOiJIUzI1NiIs...&quot;,
+  &quot;token_type&quot;: &quot;bearer&quot;,
+  &quot;user&quot;: {
+    &quot;id&quot;: &quot;9f2c...&quot;,
+    &quot;email&quot;: &quot;ventas@giscar.com&quot;,
+    &quot;nombre&quot;: &quot;Luis Pérez&quot;,
+    &quot;documento&quot;: null,
+    &quot;telefono&quot;: null,
+    &quot;direccion&quot;: null,
+    &quot;cargo&quot;: &quot;Ejecutivo de ventas&quot;,
+    &quot;departamento&quot;: &quot;ventas&quot;,
+    &quot;estado&quot;: &quot;activo&quot;,
+    &quot;created_at&quot;: &quot;2026-10-26T12:00:00Z&quot;
+  }
+}
+</code></pre>
+<ul>
+<li>Credenciales inválidas → <code>401</code>.</li>
+<li>Usuario bloqueado/desactivado → <code>403</code> con el motivo.</li>
+<li>Cada intento se registra en <code>audit_logs</code> (<code>login</code> o <code>login_fallido</code>).</li>
+</ul>
+<h3 id="post-apiauthusuarios"><code>POST /api/auth/usuarios</code></h3>
+<pre><code class="language-json">{
+  &quot;email&quot;: &quot;nuevo@giscar.com&quot;,
+  &quot;password&quot;: &quot;minimo8&quot;,
+  &quot;nombre&quot;: &quot;Nombre Apellido&quot;,
+  &quot;documento&quot;: &quot;001-0000000-0&quot;,
+  &quot;telefono&quot;: &quot;8095550000&quot;,
+  &quot;direccion&quot;: &quot;Calle 1&quot;,
+  &quot;cargo&quot;: &quot;Analista&quot;,
+  &quot;departamento&quot;: &quot;desarrollo&quot;
+}
+</code></pre>
+<ul>
+<li>Email duplicado → <code>409</code>.</li>
+<li>El alta registra <code>usuario_creado</code> en la bitácora.</li>
+</ul>
+<h3 id="patch-apiauthusuariosid"><code>PATCH /api/auth/usuarios/{id}</code></h3>
+<p>Campos opcionales: <code>email</code>, <code>nombre</code>, <code>documento</code>, <code>telefono</code>, <code>direccion</code>, <code>cargo</code>,
+<code>departamento</code>, <code>estado</code> (<code>activo|bloqueado|desactivado</code>), <code>password</code>.</p>
+<ul>
+<li>Bloquearse/desactivarse a sí mismo → <code>422</code>.</li>
+<li>Dejar RRHH sin usuarios activos → <code>422</code>.</li>
+<li>Cambiar contraseña o estado genera entradas de auditoría específicas.</li>
+</ul>
+<h2 id="5-panel">5. Panel</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Método</th>
+<th>Ruta</th>
+<th>Respuesta</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/api/panel/contadores</code></td>
+<td><code>{"ventas": n, "desarrollo": n, "despacho": n, "tecnologia": n, "rrhh": n}</code></td>
+</tr>
+</tbody>
+</table></div>
+<p>Solo incluye los departamentos visibles para el usuario; RRHH recibe todos. Los números
+los calcula el dominio.</p>
+<h2 id="6-búsqueda-global">6. Búsqueda global</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Método</th>
+<th>Ruta</th>
+<th>Query</th>
+<th>Respuesta</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/api/buscar</code></td>
+<td><code>q</code> (1–100)</td>
+<td><code>BusquedaOut</code></td>
+</tr>
+</tbody>
+</table></div>
+<pre><code class="language-json">{
+  &quot;consulta&quot;: &quot;acme&quot;,
+  &quot;tipos&quot;: [&quot;proyecto&quot;, &quot;cliente&quot;],
+  &quot;resultados&quot;: {
+    &quot;proyecto&quot;: [
+      { &quot;tipo&quot;: &quot;proyecto&quot;, &quot;id&quot;: &quot;…&quot;, &quot;titulo&quot;: &quot;Portal ACME&quot;, &quot;subtitulo&quot;: &quot;PRJ-2026-0001&quot;, &quot;codigo&quot;: &quot;PRJ-2026-0001&quot; }
+    ],
+    &quot;cliente&quot;: [
+      { &quot;tipo&quot;: &quot;cliente&quot;, &quot;id&quot;: &quot;…&quot;, &quot;titulo&quot;: &quot;ACME S.A.&quot;, &quot;subtitulo&quot;: &quot;1-3123456-7&quot;, &quot;codigo&quot;: &quot;1-3123456-7&quot; }
+    ]
+  }
+}
+</code></pre>
+<ul>
+<li>Menos de 2 caracteres útiles → <code>422</code>.</li>
+<li>Máximo 8 por categoría; categorías según departamento.</li>
+<li>El backend no devuelve URLs.</li>
+</ul>
+<h2 id="7-ventas-apiventas">7. Ventas — <code>/api/ventas</code></h2>
+<h3 id="clientes">Clientes</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Método</th>
+<th>Ruta</th>
+<th>Cuerpo</th>
+<th>Respuesta</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/clientes</code></td>
+<td>—</td>
+<td><code>CustomerOut[]</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/clientes</code></td>
+<td><code>CreateCustomerRequest</code></td>
+<td><code>201 CustomerOut</code></td>
+</tr>
+<tr>
+<td>PATCH</td>
+<td><code>/clientes/{cid}</code></td>
+<td><code>UpdateCustomerRequest</code></td>
+<td><code>CustomerOut</code></td>
+</tr>
+<tr>
+<td>DELETE</td>
+<td><code>/clientes/{cid}</code></td>
+<td>—</td>
+<td><code>204</code></td>
+</tr>
+</tbody>
+</table></div>
+<p><code>CreateCustomerRequest</code> exige <code>nombre</code>, <code>representante</code>, <code>documento</code>, <code>telefono</code> y
+<code>direccion</code>; <code>email</code> y <code>notas</code> son opcionales.</p>
+<p><code>DELETE</code> falla con <code>422</code> si el cliente tiene proyectos.</p>
+<h3 id="proyectos">Proyectos</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Método</th>
+<th>Ruta</th>
+<th>Cuerpo</th>
+<th>Respuesta</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/proyectos</code></td>
+<td>—</td>
+<td><code>ProjectOut[]</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/proyectos/{pid}</code></td>
+<td>—</td>
+<td><code>ProjectOut</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/proyectos</code></td>
+<td><code>CreateProjectRequest</code></td>
+<td><code>201 ProjectOut</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/proyectos/{pid}/pasar-desarrollo</code></td>
+<td>—</td>
+<td><code>ProjectOut</code></td>
+</tr>
+</tbody>
+</table></div>
+<p><code>CreateProjectRequest</code>:</p>
+<pre><code class="language-json">{
+  &quot;customer_id&quot;: &quot;…&quot;,
+  &quot;titulo&quot;: null,
+  &quot;descripcion_detallada&quot;: &quot;Detalle del producto o servicio solicitado (≥ 20 caracteres)&quot;,
+  &quot;monto_total&quot;: 150000.0,
+  &quot;contacto_nombre&quot;: &quot;Ana Reyes&quot;,
+  &quot;contacto_telefono&quot;: &quot;8095550001&quot;,
+  &quot;contacto_email&quot;: &quot;ana@acme.com&quot;,
+  &quot;contacto_direccion&quot;: &quot;Av. Principal 1&quot;
+}
+</code></pre>
+<p><code>ProjectOut</code> incluye <strong>valores ya calculados</strong>: <code>monto_total</code>, <code>pagado</code>, <code>saldo</code>,
+<code>estado_ventas</code>, <code>estado_desarrollo</code>, <code>estado_despacho</code> y <code>acciones</code>.</p>
+<p><code>pasar-desarrollo</code> exige ≥ 50 % cobrado y devuelve <code>422</code> si no.</p>
+<h3 id="pagos-y-facturas">Pagos y facturas</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Método</th>
+<th>Ruta</th>
+<th>Cuerpo</th>
+<th>Respuesta</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/proyectos/{pid}/pagos</code></td>
+<td>—</td>
+<td><code>PaymentOut[]</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/proyectos/{pid}/pagos</code></td>
+<td><code>{monto, metodo_pago, notas?}</code></td>
+<td><code>201 PaymentOut</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/proyectos/{pid}/facturas</code></td>
+<td>—</td>
+<td><code>InvoiceOut[]</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/facturas/{iid}/pdf</code></td>
+<td>—</td>
+<td><code>application/pdf</code></td>
+</tr>
+</tbody>
+</table></div>
+<p>El PDF de factura está disponible para <strong>Ventas y Despacho</strong> (y RRHH): Despacho lo
+necesita para entregar la factura de la liquidación.</p>
+<p>Al registrar un pago, la ruta en una sola transacción:</p>
+<ol>
+<li>valida contra el saldo;</li>
+<li>crea el <code>Payment</code>;</li>
+<li>actualiza <code>estado_ventas</code> (<code>cobrado_50</code> con parcial, <code>cobrado_100</code> al cubrir total);</li>
+<li>emite una <code>Invoice</code> con numeración <code>FAC-YYYY-NNNNN</code> y snapshot;</li>
+<li>audita <code>pago_registrado</code> y <code>factura_emitida</code>.</li>
+</ol>
+<p><code>monto</code> excede el saldo → <code>422</code>. Proyecto inexistente → <code>404</code>.</p>
+<h2 id="8-produccióndesarrollo-apidesarrollo">8. Producción/Desarrollo — <code>/api/desarrollo</code></h2>
+<h3 id="tablero-y-acciones">Tablero y acciones</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Método</th>
+<th>Ruta</th>
+<th>Respuesta</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/proyectos</code></td>
+<td><code>{recibidos: Project[], en_curso: Project[], historial: Project[]}</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/proyectos/{pid}/acciones</code></td>
+<td><code>{acciones: string[], estado_desarrollo: string}</code></td>
+</tr>
+</tbody>
+</table></div>
+<p>Las columnas y acciones las decide el dominio; el frontend solo las pinta.</p>
+<h3 id="plan-fases-y-avance">Plan, fases y avance</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Método</th>
+<th>Ruta</th>
+<th>Cuerpo</th>
+<th>Respuesta</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/proyectos/{pid}/plan</code></td>
+<td>—</td>
+<td>plan + fases + miembros + avances + totales</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/proyectos/{pid}/plan</code></td>
+<td><code>CreatePlanWithPhasesRequest</code></td>
+<td><code>201 PlanOut</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/proyectos/{pid}/fases/{fid}</code></td>
+<td>—</td>
+<td><code>PhaseOut</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/proyectos/{pid}/fases/{fid}/estado</code></td>
+<td><code>{target}</code></td>
+<td><code>PhaseOut</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/proyectos/{pid}/avance</code></td>
+<td><code>{porcentaje, notas, phase_id?}</code></td>
+<td><code>201 ProgressOut</code></td>
+</tr>
+</tbody>
+</table></div>
+<p><code>CreatePlanWithPhasesRequest</code>:</p>
+<pre><code class="language-json">{
+  &quot;resumen&quot;: &quot;Rediseño del portal&quot;,
+  &quot;objetivos&quot;: &quot;Mejorar tiempos de carga&quot;,
+  &quot;horas_estimadas&quot;: 120,
+  &quot;fases&quot;: [
+    { &quot;orden&quot;: 1, &quot;nombre&quot;: &quot;Análisis&quot;, &quot;descripcion&quot;: &quot;&quot;, &quot;horas_estimadas&quot;: 20,
+      &quot;fecha_inicio&quot;: &quot;2026-11-01&quot;, &quot;fecha_fin_estimada&quot;: &quot;2026-11-07&quot; }
+  ],
+  &quot;miembros&quot;: [&quot;id-usuario-desarrollo&quot;]
+}
+</code></pre>
+<ul>
+<li>Plan duplicado → <code>409</code>.</li>
+<li>Fase inválida → <code>422</code> con <code>Fase '&lt;nombre&gt;': &lt;motivo&gt;</code>.</li>
+<li>Miembro inexistente → <code>404</code>; de otro departamento → <code>422</code>.</li>
+</ul>
+<p>El endpoint de plan devuelve también:</p>
+<pre><code class="language-json">{
+  &quot;horas_totales_fases&quot;: 20,
+  &quot;estado_desarrollo&quot;: &quot;en_planificacion&quot;,
+  &quot;puede_registrar_avance&quot;: false,
+  &quot;acciones&quot;: [&quot;iniciar&quot;, &quot;cancelar&quot;]
+}
+</code></pre>
+<h3 id="transiciones-del-proyecto">Transiciones del proyecto</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Método</th>
+<th>Ruta</th>
+<th>Respuesta</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>POST</td>
+<td><code>/proyectos/{pid}/iniciar</code></td>
+<td><code>{estado_desarrollo}</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/proyectos/{pid}/completar</code></td>
+<td><code>{estado_desarrollo}</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/proyectos/{pid}/pasar-despacho</code></td>
+<td><code>{estado_desarrollo}</code></td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li><code>iniciar</code>: <code>en_planificacion → en_desarrollo</code>. Las fases/avances solo se editan en
+  <code>en_desarrollo</code>.</li>
+<li><code>completar</code>: exige <strong>todas</strong> las fases completadas (<code>422</code> con la lista de pendientes).</li>
+<li><code>pasar-despacho</code>: exige <code>completado</code>; fija <code>pendiente_cobro</code> o <code>pendiente_entrega</code>
+  según el saldo.</li>
+</ul>
+<h3 id="cancelación">Cancelación</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Método</th>
+<th>Ruta</th>
+<th>Cuerpo</th>
+<th>Respuesta</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>POST</td>
+<td><code>/proyectos/{pid}/cancelar</code></td>
+<td><code>{motivo, informe}</code> (informe ≥ 30)</td>
+<td><code>201 CancellationOut</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/proyectos/{pid}/cancelacion</code></td>
+<td>—</td>
+<td><code>CancellationOut</code> o <code>null</code></td>
+</tr>
+</tbody>
+</table></div>
+<p>Se valida la transición <strong>antes</strong> de escribir y luego se guarda informe + estado.</p>
+<h3 id="miembros">Miembros</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Método</th>
+<th>Ruta</th>
+<th>Cuerpo</th>
+<th>Respuesta</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/catalogo-usuarios</code></td>
+<td>—</td>
+<td>usuarios activos de Producción</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/proyectos/{pid}/miembros</code></td>
+<td><code>{user_ids: string[]}</code></td>
+<td><code>MemberOut[]</code></td>
+</tr>
+<tr>
+<td>DELETE</td>
+<td><code>/proyectos/{pid}/miembros/{mid}</code></td>
+<td>—</td>
+<td><code>204</code></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="adjuntos-compartidos-con-ventas-despacho-y-tecnología">Adjuntos (compartidos con Ventas, Despacho y Tecnología)</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Método</th>
+<th>Ruta</th>
+<th>Cuerpo</th>
+<th>Respuesta</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>POST</td>
+<td><code>/adjuntos/{entidad_tipo}/{entidad_id}</code></td>
+<td><code>multipart: file</code></td>
+<td><code>201 AttachmentOut</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/adjuntos/{aid}/descargar</code></td>
+<td>—</td>
+<td>binario (<code>FileResponse</code>)</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/adjuntos/{entidad_tipo}/{entidad_id}</code></td>
+<td>—</td>
+<td><code>AttachmentOut[]</code></td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li><code>entidad_tipo</code> ∈ <code>proyecto|plan|fase|cancelacion|despacho|incidencia|factura</code>.</li>
+<li>Tamaño máximo: <code>GISCAR_MAX_UPLOAD_MB</code> (20 por defecto).</li>
+<li>MIME en lista blanca; nombre saneado; se guarda en <code>uploads/</code>.</li>
+<li>La descarga se declara <strong>antes</strong> que el listado para que <code>/{aid}/descargar</code> no colisione
+  con <code>/{entidad_tipo}/{entidad_id}</code>.</li>
+</ul>
+<h2 id="9-despacho-apidespacho">9. Despacho — <code>/api/despacho</code></h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Método</th>
+<th>Ruta</th>
+<th>Cuerpo</th>
+<th>Respuesta</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/proyectos</code></td>
+<td>—</td>
+<td><code>{pendientes: [], cerrados: []}</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/proyectos/{pid}</code></td>
+<td>—</td>
+<td>detalle completo (cliente, pagos, entrega, negación, <code>por_pagado</code>)</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/proyectos/{pid}/liquidar</code></td>
+<td><code>{metodo_pago, notas?}</code></td>
+<td><code>201 {id, monto, porcentaje, tipo, factura}</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/proyectos/{pid}/confirmar-entrega</code></td>
+<td><code>DeliveryIn</code></td>
+<td><code>201 DeliveryOut</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/proyectos/{pid}/negar</code></td>
+<td><code>{motivo, detalle}</code> (detalle ≥ 15)</td>
+<td><code>201 DenialOut</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/proyectos/{pid}/resolver-negacion</code></td>
+<td>—</td>
+<td><code>{estado_despacho}</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/proyectos/{pid}/estado</code></td>
+<td><code>{target}</code></td>
+<td><code>{estado_despacho}</code></td>
+</tr>
+</tbody>
+</table></div>
+<p><code>DeliveryIn</code>:</p>
+<pre><code class="language-json">{
+  &quot;fecha_entrega&quot;: &quot;2026-11-15&quot;,
+  &quot;hora_entrega&quot;: &quot;10:30&quot;,
+  &quot;destinatario&quot;: &quot;Ana Reyes&quot;,
+  &quot;detalle_entregado&quot;: &quot;Servidor y licencias&quot;,
+  &quot;notas&quot;: &quot;Recibido conforme&quot;
+}
+</code></pre>
+<p>Comportamiento:</p>
+<ul>
+<li><code>liquidar</code> cobra <strong>todo el saldo</strong> (no acepta importe parcial), crea <code>Payment</code> tipo
+  <code>liquidacion</code>, <strong>emite la factura</strong> <code>FAC-YYYY-NNNNN</code> (registro + PDF), cierra Ventas
+  (<code>cerrado</code>) y pasa Despacho de <code>pendiente_cobro</code> a <code>pendiente_entrega</code>. La respuesta
+  incluye <code>factura</code> con los datos del documento.</li>
+<li><code>GET /proyectos/{pid}</code> incluye <code>facturas[]</code>, para que Despacho liste y descargue los
+  anticipos y la liquidación.</li>
+<li><code>confirmar-entrega</code> exige saldo 0; guarda el acta interna y marca <code>entregado</code>.</li>
+<li><code>negar</code> pasa a <code>negado</code> con motivo/detalle.</li>
+<li><code>resolver-negacion</code> vuelve a <code>pendiente_cobro</code> o <code>pendiente_entrega</code> según saldo.</li>
+<li><code>/estado</code> es una transición genérica validada por la máquina de estados.</li>
+</ul>
+<h2 id="10-tecnología-apitecnologia">10. Tecnología — <code>/api/tecnologia</code></h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Método</th>
+<th>Ruta</th>
+<th>Quién</th>
+<th>Cuerpo</th>
+<th>Respuesta</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>POST</td>
+<td><code>/incidencias</code></td>
+<td>Todos</td>
+<td><code>CreateIncidenceRequest</code></td>
+<td><code>201</code> incidencia</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/incidencias</code></td>
+<td>Tecnología</td>
+<td>—</td>
+<td><code>{incidencias: [], resumen: {estado: n}}</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/incidencias/{iid}</code></td>
+<td>Tecnología</td>
+<td>—</td>
+<td>incidencia + <code>reportes[]</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/incidencias/{iid}/asignar</code></td>
+<td>Tecnología</td>
+<td><code>{user_ids: []}</code></td>
+<td>incidencia</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/incidencias/{iid}/estado</code></td>
+<td>Tecnología</td>
+<td><code>{target}</code></td>
+<td>incidencia</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/incidencias/{iid}/reporte</code></td>
+<td>Tecnología</td>
+<td><code>IncidentReportIn</code></td>
+<td>incidencia + <code>reporte_id</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/tecnicos</code></td>
+<td>Tecnología</td>
+<td>—</td>
+<td><code>[{id, nombre, cargo}]</code></td>
+</tr>
+</tbody>
+</table></div>
+<pre><code class="language-json">{
+  &quot;titulo&quot;: &quot;Monitor sin señal&quot;,
+  &quot;descripcion&quot;: &quot;El monitor del puesto 4 no enciende desde esta mañana.&quot;,
+  &quot;equipo_afectado&quot;: &quot;Monitor Dell U2419H&quot;,
+  &quot;prioridad&quot;: &quot;alta&quot;
+}
+</code></pre>
+<ul>
+<li>Código automático <code>INC-YYYY-NNNN</code>; <code>orden_llegada</code> consecutivo.</li>
+<li>La cola se ordena por prioridad descendente y llegada ascendente.</li>
+<li><code>reporte</code> acepta incidencias <code>abierta</code> (las pasa a <code>en_proceso</code>) y las deja <code>resuelta</code>.</li>
+<li><code>resumen</code> cuenta por estado (<code>abierta</code>, <code>en_proceso</code>, <code>resuelta</code>, <code>cerrada</code>).</li>
+</ul>
+<h2 id="11-rrhh-apirrhh">11. RRHH — <code>/api/rrhh</code></h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Método</th>
+<th>Ruta</th>
+<th>Query</th>
+<th>Respuesta</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/dashboard</code></td>
+<td>—</td>
+<td>KPIs globales</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/actividad</code></td>
+<td><code>limit</code> (máx. 500, def. 200)</td>
+<td><code>AuditLog[]</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/proyectos</code></td>
+<td>—</td>
+<td>todos los proyectos (solo lectura)</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/usuarios</code></td>
+<td><code>departamento?</code></td>
+<td>usuarios (vista RRHH)</td>
+</tr>
+</tbody>
+</table></div>
+<p><code>/dashboard</code> devuelve agregados calculados en SQL:</p>
+<pre><code class="language-json">{
+  &quot;ventas&quot;: { &quot;clientes&quot;: 10, &quot;facturas&quot;: 12, &quot;monto_cobrado&quot;: 15000.0,
+               &quot;proyectos_total&quot;: 8, &quot;proyectos_por_estado&quot;: {&quot;cobrado_50&quot;: 3} },
+  &quot;desarrollo&quot;: { &quot;planes&quot;: 5, &quot;fases_por_estado&quot;: {&quot;completada&quot;: 7}, &quot;cancelaciones&quot;: 1 },
+  &quot;despacho&quot;: { &quot;proyectos_por_estado&quot;: {&quot;entregado&quot;: 2} },
+  &quot;tecnologia&quot;: { &quot;incidencias_por_estado&quot;: {&quot;abierta&quot;: 1},
+                  &quot;incidencias_por_prioridad&quot;: {&quot;alta&quot;: 1} },
+  &quot;usuarios&quot;: { &quot;por_departamento&quot;: {&quot;ventas&quot;: 2}, &quot;por_estado&quot;: {&quot;activo&quot;: 5}, &quot;total&quot;: 5 }
+}
+</code></pre>
+<h2 id="12-integraciones">12. Integraciones</h2>
+<p>GCISCAR <strong>no integra servicios externos</strong>. Sus «integraciones» son internas:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Integración</th>
+<th>Cómo funciona</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Frontend ↔ Backend</td>
+<td>HTTP JSON con Bearer; Vite proxy en dev; mismo origen en prod</td>
+</tr>
+<tr>
+<td>PDF de facturas</td>
+<td>reportlab en memoria → <code>Response</code> con <code>Content-Disposition</code></td>
+</tr>
+<tr>
+<td>Adjuntos</td>
+<td><code>multipart/form-data</code> → disco (<code>uploads/</code>) + metadatos en SQLite</td>
+</tr>
+<tr>
+<td>Ventas ↔ Producción ↔ Despacho</td>
+<td>Estado compartido del agregado <code>Project</code>; el backend calcula transiciones y acciones</td>
+</tr>
+<tr>
+<td>Tecnología ↔ todos</td>
+<td>Cualquier departamento crea incidencias; solo Tecnología las gestiona</td>
+</tr>
+<tr>
+<td>RRHH ↔ todos</td>
+<td>Lectura global + gestión de usuarios; bitácora</td>
+</tr>
+<tr>
+<td>Búsqueda ↔ todos</td>
+<td>Agrega proyectos, clientes, incidencias y usuarios según permisos</td>
+</tr>
+<tr>
+<td>Instalador ↔ app</td>
+<td>Lanzador comprueba <code>/api/health</code> antes de abrir WebView2</td>
+</tr>
+</tbody>
+</table></div>
+<p>No hay webhooks, correo, SMS, pasarelas de pago, servicios cloud ni telemetría.</p>
+<h2 id="13-ejemplos-con-curl">13. Ejemplos con <code>curl</code></h2>
+<pre><code class="language-bash"># Login
+TOKEN=$(curl -s -X POST http://127.0.0.1:8000/api/auth/login \
+  -H &quot;Content-Type: application/json&quot; \
+  -d '{&quot;email&quot;:&quot;ventas@giscar.com&quot;,&quot;password&quot;:&quot;giscar1234&quot;}' | jq -r .access_token)
+
+# Listar proyectos
+curl -s http://127.0.0.1:8000/api/ventas/proyectos \
+  -H &quot;Authorization: Bearer $TOKEN&quot;
+
+# Descargar factura
+curl -s -OJ http://127.0.0.1:8000/api/ventas/facturas/&lt;id&gt;/pdf \
+  -H &quot;Authorization: Bearer $TOKEN&quot;
+
+# Subir evidencia
+curl -s -X POST http://127.0.0.1:8000/api/desarrollo/adjuntos/incidencia/&lt;id&gt; \
+  -H &quot;Authorization: Bearer $TOKEN&quot; \
+  -F &quot;file=@foto.jpg&quot;
+</code></pre>
+<h2 id="14-compatibilidad-y-versionado">14. Compatibilidad y versionado</h2>
+<ul>
+<li>No hay versión en la URL (<code>/api/v1</code>); la app es local y se despliega junto al frontend.</li>
+<li>Los cambios de contrato implican rebuild del frontend y del instalador.</li>
+<li>OpenAPI se regenera solo con el código; no se mantiene un archivo estático.</li>
+</ul>
+      </article>
+      <footer class="page-foot">
+      <a class="page-link prev" href="04-base-de-datos.html"><small>Anterior</small><span>← Base de datos</span></a>
+      <a class="page-link next" href="06-seguridad.html"><small>Siguiente</small><span>Seguridad →</span></a>
+        <p class="source">Documento generado desde
+          <a href="../05-api-e-integraciones.md">05-api-e-integraciones.md</a> · 2026-11-10</p>
+      </footer>
+    </main>
+
+    <aside class="toc" aria-label="En esta página"><p class="toc-title">En esta página</p><ul>
+<li><a href="#1-generalidades">1. Generalidades</a></li>
+<li><a href="#2-resumen-de-recursos">2. Resumen de recursos</a></li>
+<li><a href="#3-salud">3. Salud</a></li>
+<li><a href="#4-autenticación-y-usuarios">4. Autenticación y usuarios</a><ul>
+<li><a href="#post-apiauthlogin">POST /api/auth/login</a></li>
+<li><a href="#post-apiauthusuarios">POST /api/auth/usuarios</a></li>
+<li><a href="#patch-apiauthusuariosid">PATCH /api/auth/usuarios/{id}</a></li>
+</ul>
+</li>
+<li><a href="#5-panel">5. Panel</a></li>
+<li><a href="#6-búsqueda-global">6. Búsqueda global</a></li>
+<li><a href="#7-ventas-apiventas">7. Ventas — /api/ventas</a><ul>
+<li><a href="#clientes">Clientes</a></li>
+<li><a href="#proyectos">Proyectos</a></li>
+<li><a href="#pagos-y-facturas">Pagos y facturas</a></li>
+</ul>
+</li>
+<li><a href="#8-produccióndesarrollo-apidesarrollo">8. Producción/Desarrollo — /api/desarrollo</a><ul>
+<li><a href="#tablero-y-acciones">Tablero y acciones</a></li>
+<li><a href="#plan-fases-y-avance">Plan, fases y avance</a></li>
+<li><a href="#transiciones-del-proyecto">Transiciones del proyecto</a></li>
+<li><a href="#cancelación">Cancelación</a></li>
+<li><a href="#miembros">Miembros</a></li>
+<li><a href="#adjuntos-compartidos-con-ventas-despacho-y-tecnología">Adjuntos (compartidos con Ventas, Despacho y Tecnología)</a></li>
+</ul>
+</li>
+<li><a href="#9-despacho-apidespacho">9. Despacho — /api/despacho</a></li>
+<li><a href="#10-tecnología-apitecnologia">10. Tecnología — /api/tecnologia</a></li>
+<li><a href="#11-rrhh-apirrhh">11. RRHH — /api/rrhh</a></li>
+<li><a href="#12-integraciones">12. Integraciones</a></li>
+<li><a href="#13-ejemplos-con-curl">13. Ejemplos con curl</a></li>
+<li><a href="#14-compatibilidad-y-versionado">14. Compatibilidad y versionado</a></li>
+</ul></aside>
+  </div>
+
+  <script defer src="assets/mermaid.min.js"></script>
+  <script defer src="assets/docs.js"></script>
+</body>
+</html>

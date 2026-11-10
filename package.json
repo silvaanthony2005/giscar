@@ -9,6 +9,7 @@
     "package": "uv run --project backend python installer/build.py",
     "lint": "npm --prefix frontend run lint && cd backend && uv run ruff check .",
     "fmt": "cd backend && uv run ruff format .",
+    "docs": "uv run --project backend --with markdown python docs/build_html.py",
     "test": "cd backend && uv run pytest",
     "check": "npm run build && npm run lint && npm run test"
   }

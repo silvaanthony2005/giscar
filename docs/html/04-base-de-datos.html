@@ -1,0 +1,1257 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="04 · Base de datos — documentación técnica de GCISCAR">
+  <title>04 · Base de datos · GCISCAR</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#contenido">Saltar al contenido</a>
+
+  <header class="topbar">
+    <button class="menu-btn" type="button" data-menu aria-label="Abrir menú"
+            aria-expanded="false" aria-controls="sidebar">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round"/>
+      </svg>
+    </button>
+    <a class="brand" href="index.html">
+      <span class="logo" aria-hidden="true">G</span>
+      <span class="brand-text"><strong>GCISCAR</strong><small>Documentación técnica</small></span>
+    </a>
+    <div class="topbar-right">
+      <span class="pill">v0.1.0</span>
+      <span class="pill pill-soft">Sistema local</span>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Documentación">
+      <div class="nav-search">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/>
+          <path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <input type="search" placeholder="Filtrar secciones…" aria-label="Filtrar secciones"
+               data-nav-filter autocomplete="off">
+      </div>
+      <nav class="nav" aria-label="Documentos">
+        <p class="nav-heading">Documentación</p>
+        <a class="nav-link" href="index.html" data-keywords="inicio"><span class="nav-num">◎</span><span>Inicio</span></a>
+        <a class="nav-link" href="01-arquitectura.html" data-keywords="arquitectura"><span class="nav-num">01</span><span>Arquitectura</span></a>
+        <a class="nav-link" href="02-backend.html" data-keywords="backend"><span class="nav-num">02</span><span>Backend</span></a>
+        <a class="nav-link" href="03-frontend.html" data-keywords="frontend"><span class="nav-num">03</span><span>Frontend</span></a>
+        <a class="nav-link is-active" href="04-base-de-datos.html" aria-current="page" data-keywords="base de datos"><span class="nav-num">04</span><span>Base de datos</span></a>
+        <a class="nav-link" href="05-api-e-integraciones.html" data-keywords="api e integraciones"><span class="nav-num">05</span><span>API e integraciones</span></a>
+        <a class="nav-link" href="06-seguridad.html" data-keywords="seguridad"><span class="nav-num">06</span><span>Seguridad</span></a>
+        <a class="nav-link" href="07-flujos-y-procesos.html" data-keywords="flujos y procesos"><span class="nav-num">07</span><span>Flujos y procesos</span></a>
+        <a class="nav-link" href="08-infraestructura-y-despliegue.html" data-keywords="infraestructura"><span class="nav-num">08</span><span>Infraestructura</span></a>
+      </nav>
+      <div class="sidebar-foot">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span>GCISCAR v0.1.0<br>Actualizado 2026-11-10<br>
+        <a href="../04-base-de-datos.md">Markdown fuente</a></span>
+      </div>
+    </aside>
+
+    <div class="scrim" data-scrim hidden></div>
+
+    <main class="content" id="contenido">
+      <nav class="crumbs" aria-label="Ruta"><a href="index.html">Documentación</a><span>/</span><span>Base de datos</span></nav>
+      <article class="prose">
+<h1 id="04-base-de-datos">04 · Base de datos</h1>
+<h2 id="1-motor-y-configuración">1. Motor y configuración</h2>
+<ul>
+<li><strong>SQLite</strong> en un archivo único (<code>giscar.db</code>), gestionado con SQLAlchemy 2.</li>
+<li><code>DATABASE_URL</code> por defecto:</li>
+<li>desarrollo: <code>sqlite:///backend/giscar.db</code></li>
+<li><code>.exe</code>: <code>%LOCALAPPDATA%\GCISCAR\giscar.db</code></li>
+<li>PRAGMAs aplicados en cada conexión (<code>infrastructure/db/session.py</code>):</li>
+</ul>
+<pre><code class="language-sql">PRAGMA journal_mode = WAL;     -- lectores concurrentes
+PRAGMA foreign_keys = ON;      -- integridad referencial
+PRAGMA busy_timeout = 5000;    -- espera 5 s si la BD está bloqueada
+</code></pre>
+<ul>
+<li><code>create_engine(..., check_same_thread=False, pool_pre_ping=True)</code>.</li>
+<li>Sesión: <code>autoflush=False</code>, <code>autocommit=False</code>, <code>expire_on_commit=False</code>.</li>
+<li>Una sesión por request (<code>get_db</code>); <code>commit()</code> explícito al final de cada mutación.</li>
+</ul>
+<p>Archivos en disco: <code>giscar.db</code>, <code>giscar.db-wal</code>, <code>giscar.db-shm</code>.</p>
+<h2 id="2-convenciones">2. Convenciones</h2>
+<ul>
+<li><strong>IDs</strong>: <code>String(32)</code> con <code>uuid4().hex</code> (<code>new_id()</code>), generados en aplicación.</li>
+<li><strong>Fechas</strong>: <code>DateTime(timezone=True)</code> en UTC (<code>utcnow()</code>); SQLite las guarda como texto.</li>
+<li><strong>Fechas sin hora</strong>: <code>Date</code> (<code>dev_phases</code>, <code>dispatches</code>).</li>
+<li><strong>Dinero</strong>: <code>Integer</code> en <strong>centavos</strong> (<code>projects.monto_total</code>, <code>payments.monto</code>,
+  <code>invoices.monto</code>). La API convierte a unidades (<code>float</code>) en el borde.</li>
+<li><strong>Estados</strong>: <code>String</code>, validados por las máquinas de estado del dominio.</li>
+<li><strong>JSON</strong>: <code>invoices.snapshot</code> es texto JSON con una copia inmutable del proyecto.</li>
+<li><strong>Borrado</strong>: solo clientes sin proyectos. Usuarios y evidencias no se borran
+  (baja lógica <code>desactivado</code>).</li>
+<li>Sin <code>ON DELETE CASCADE</code> salvo la relación ORM de <code>incidents.assignees</code>
+  (<code>delete-orphan</code>, aplicada en la sesión).</li>
+</ul>
+<h2 id="3-diagrama-entidad-relación-núcleo-del-expediente">3. Diagrama entidad-relación — núcleo del expediente</h2>
+<div class="mermaid">
+erDiagram
+    USERS ||--o{ CUSTOMERS : "created_by"
+    USERS ||--o{ PROJECTS : "created_by"
+    CUSTOMERS ||--o{ PROJECTS : "tiene"
+    PROJECTS ||--o{ PAYMENTS : "cobra"
+    PROJECTS ||--o{ INVOICES : "factura"
+    PAYMENTS ||--o{ INVOICES : "origina"
+    USERS ||--o{ PAYMENTS : "registrado_por"
+    USERS ||--o{ INVOICES : "emitida_por"
+    PROJECTS ||--o| DEV_PLANS : "plan"
+    DEV_PLANS ||--o{ DEV_PHASES : "fases"
+    PROJECTS ||--o{ PROJECT_MEMBERS : "equipo"
+    PROJECTS ||--o{ PROGRESS_UPDATES : "avance"
+    PROJECTS ||--o| CANCELLATIONS : "cancelación"
+    PROJECTS ||--o| DISPATCHES : "entrega"
+    PROJECTS ||--o| DENIALS : "negación"
+</div>
+<h2 id="4-diagrama-soporte-transversal">4. Diagrama — soporte transversal</h2>
+<div class="mermaid">
+erDiagram
+    USERS ||--o{ INCIDENTS : "reporta"
+    INCIDENTS ||--o{ INCIDENT_ASSIGNEES : "técnicos"
+    USERS ||--o{ INCIDENT_ASSIGNEES : "asignado"
+    INCIDENTS ||--o{ INCIDENT_REPORTS : "resolución"
+    USERS ||--o{ INCIDENT_REPORTS : "resuelve"
+    USERS ||--o{ AUDIT_LOGS : "actor"
+    PROJECTS ||--o{ ATTACHMENTS : "entidad polimórfica"
+    INCIDENTS ||--o{ ATTACHMENTS : "entidad polimórfica"
+</div>
+<p><code>attachments</code> no tiene FK a la entidad: usa <code>(entidad_tipo, entidad_id)</code> polimórfico.
+<code>audit_logs.user_id</code> tampoco declara FK (el actor puede haberse eliminado o el log
+registrar un email desconocido).</p>
+<h2 id="5-tablas">5. Tablas</h2>
+<h3 id="51-users">5.1 <code>users</code></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Columna</th>
+<th>Tipo</th>
+<th>Notas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td>VARCHAR(32) PK</td>
+<td>uuid hex</td>
+</tr>
+<tr>
+<td><code>email</code></td>
+<td>VARCHAR(255)</td>
+<td><strong>UNIQUE</strong>, indexado, minúsculas</td>
+</tr>
+<tr>
+<td><code>password_hash</code></td>
+<td>VARCHAR(255)</td>
+<td>Argon2</td>
+</tr>
+<tr>
+<td><code>nombre</code></td>
+<td>VARCHAR(255)</td>
+<td></td>
+</tr>
+<tr>
+<td><code>documento</code></td>
+<td>VARCHAR(50)</td>
+<td>nullable</td>
+</tr>
+<tr>
+<td><code>telefono</code></td>
+<td>VARCHAR(50)</td>
+<td>nullable, solo dígitos</td>
+</tr>
+<tr>
+<td><code>direccion</code></td>
+<td>TEXT</td>
+<td>nullable</td>
+</tr>
+<tr>
+<td><code>cargo</code></td>
+<td>VARCHAR(100)</td>
+<td>nullable</td>
+</tr>
+<tr>
+<td><code>departamento</code></td>
+<td>VARCHAR(20)</td>
+<td>indexado: <code>ventas/desarrollo/despacho/tecnologia/rrhh</code></td>
+</tr>
+<tr>
+<td><code>estado</code></td>
+<td>VARCHAR(20)</td>
+<td>default <code>activo</code>; también <code>bloqueado</code>, <code>desactivado</code></td>
+</tr>
+<tr>
+<td><code>created_at</code>, <code>updated_at</code></td>
+<td>DATETIME</td>
+<td>UTC</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="52-customers">5.2 <code>customers</code></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Columna</th>
+<th>Tipo</th>
+<th>Notas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td>VARCHAR(32) PK</td>
+<td></td>
+</tr>
+<tr>
+<td><code>nombre</code></td>
+<td>VARCHAR(255)</td>
+<td>empresa</td>
+</tr>
+<tr>
+<td><code>representante</code></td>
+<td>VARCHAR(255)</td>
+<td>nullable por registros antiguos; obligatorio en altas</td>
+</tr>
+<tr>
+<td><code>documento</code></td>
+<td>VARCHAR(50)</td>
+<td>RIF/cédula</td>
+</tr>
+<tr>
+<td><code>telefono</code></td>
+<td>VARCHAR(50)</td>
+<td>solo dígitos</td>
+</tr>
+<tr>
+<td><code>email</code></td>
+<td>VARCHAR(255)</td>
+<td>nullable</td>
+</tr>
+<tr>
+<td><code>direccion</code></td>
+<td>TEXT</td>
+<td></td>
+</tr>
+<tr>
+<td><code>notas</code></td>
+<td>TEXT</td>
+<td></td>
+</tr>
+<tr>
+<td><code>created_by</code></td>
+<td>VARCHAR(32) FK <code>users.id</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>created_at</code>, <code>updated_at</code></td>
+<td>DATETIME</td>
+<td></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="53-projects-agregado-central">5.3 <code>projects</code> (agregado central)</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Columna</th>
+<th>Tipo</th>
+<th>Notas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td>VARCHAR(32) PK</td>
+<td></td>
+</tr>
+<tr>
+<td><code>codigo</code></td>
+<td>VARCHAR(30)</td>
+<td><strong>UNIQUE</strong>, indexado, <code>PRJ-YYYY-NNNN</code></td>
+</tr>
+<tr>
+<td><code>titulo</code></td>
+<td>VARCHAR(255)</td>
+<td>derivado de los detalles si no se envía</td>
+</tr>
+<tr>
+<td><code>descripcion_detallada</code></td>
+<td>TEXT</td>
+<td>≥ 20 caracteres</td>
+</tr>
+<tr>
+<td><code>customer_id</code></td>
+<td>VARCHAR(32) FK <code>customers.id</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>monto_total</code></td>
+<td>INTEGER</td>
+<td><strong>centavos</strong></td>
+</tr>
+<tr>
+<td><code>contacto_nombre</code></td>
+<td>VARCHAR(255)</td>
+<td>snapshot para Despacho</td>
+</tr>
+<tr>
+<td><code>contacto_telefono</code></td>
+<td>VARCHAR(50)</td>
+<td>nullable</td>
+</tr>
+<tr>
+<td><code>contacto_email</code></td>
+<td>VARCHAR(255)</td>
+<td>nullable</td>
+</tr>
+<tr>
+<td><code>contacto_direccion</code></td>
+<td>TEXT</td>
+<td>nullable</td>
+</tr>
+<tr>
+<td><code>estado_ventas</code></td>
+<td>VARCHAR(30)</td>
+<td>default <code>levantamiento</code></td>
+</tr>
+<tr>
+<td><code>estado_desarrollo</code></td>
+<td>VARCHAR(30)</td>
+<td>default <code>pendiente</code></td>
+</tr>
+<tr>
+<td><code>estado_despacho</code></td>
+<td>VARCHAR(30)</td>
+<td>default <code>pendiente</code></td>
+</tr>
+<tr>
+<td><code>created_by</code></td>
+<td>VARCHAR(32) FK <code>users.id</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>created_at</code>, <code>updated_at</code></td>
+<td>DATETIME</td>
+<td></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="54-payments">5.4 <code>payments</code></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Columna</th>
+<th>Tipo</th>
+<th>Notas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td>VARCHAR(32) PK</td>
+<td></td>
+</tr>
+<tr>
+<td><code>project_id</code></td>
+<td>VARCHAR(32) FK <code>projects.id</code></td>
+<td>indexado</td>
+</tr>
+<tr>
+<td><code>monto</code></td>
+<td>INTEGER</td>
+<td>centavos</td>
+</tr>
+<tr>
+<td><code>porcentaje</code></td>
+<td>INTEGER</td>
+<td>acumulado 0–100</td>
+</tr>
+<tr>
+<td><code>tipo</code></td>
+<td>VARCHAR(20)</td>
+<td><code>anticipo/liquidacion/total</code></td>
+</tr>
+<tr>
+<td><code>metodo_pago</code></td>
+<td>VARCHAR(50)</td>
+<td></td>
+</tr>
+<tr>
+<td><code>notas</code></td>
+<td>TEXT</td>
+<td>nullable</td>
+</tr>
+<tr>
+<td><code>registrado_por</code></td>
+<td>VARCHAR(32) FK <code>users.id</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>fecha</code></td>
+<td>DATETIME</td>
+<td>UTC</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="55-invoices">5.5 <code>invoices</code></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Columna</th>
+<th>Tipo</th>
+<th>Notas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td>VARCHAR(32) PK</td>
+<td></td>
+</tr>
+<tr>
+<td><code>numero</code></td>
+<td>VARCHAR(30)</td>
+<td><strong>UNIQUE</strong>, <code>FAC-YYYY-NNNNN</code></td>
+</tr>
+<tr>
+<td><code>project_id</code></td>
+<td>VARCHAR(32) FK <code>projects.id</code></td>
+<td>indexado</td>
+</tr>
+<tr>
+<td><code>payment_id</code></td>
+<td>VARCHAR(32) FK <code>payments.id</code></td>
+<td>1 factura por pago (Ventas o liquidación de Despacho)</td>
+</tr>
+<tr>
+<td><code>monto</code></td>
+<td>INTEGER</td>
+<td>centavos</td>
+</tr>
+<tr>
+<td><code>porcentaje</code></td>
+<td>INTEGER</td>
+<td></td>
+</tr>
+<tr>
+<td><code>metodo_pago</code></td>
+<td>VARCHAR(50)</td>
+<td></td>
+</tr>
+<tr>
+<td><code>descripcion</code></td>
+<td>TEXT</td>
+<td></td>
+</tr>
+<tr>
+<td><code>snapshot</code></td>
+<td>TEXT</td>
+<td>JSON del proyecto/cliente al emitir</td>
+</tr>
+<tr>
+<td><code>emitida_por</code></td>
+<td>VARCHAR(32) FK <code>users.id</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>emitida_en</code></td>
+<td>DATETIME</td>
+<td></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="56-dev_plans">5.6 <code>dev_plans</code></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Columna</th>
+<th>Tipo</th>
+<th>Notas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td>VARCHAR(32) PK</td>
+<td></td>
+</tr>
+<tr>
+<td><code>project_id</code></td>
+<td>VARCHAR(32) FK <code>projects.id</code></td>
+<td>indexado; <strong>1 plan por proyecto</strong> (regla de aplicación, sin UNIQUE)</td>
+</tr>
+<tr>
+<td><code>resumen</code></td>
+<td>TEXT</td>
+<td></td>
+</tr>
+<tr>
+<td><code>objetivos</code></td>
+<td>TEXT</td>
+<td>puede ir vacío</td>
+</tr>
+<tr>
+<td><code>horas_estimadas</code></td>
+<td>INTEGER</td>
+<td>&gt; 0</td>
+</tr>
+<tr>
+<td><code>created_by</code></td>
+<td>VARCHAR(32) FK <code>users.id</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>created_at</code>, <code>updated_at</code></td>
+<td>DATETIME</td>
+<td></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="57-dev_phases">5.7 <code>dev_phases</code></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Columna</th>
+<th>Tipo</th>
+<th>Notas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td>VARCHAR(32) PK</td>
+<td></td>
+</tr>
+<tr>
+<td><code>plan_id</code></td>
+<td>VARCHAR(32) FK <code>dev_plans.id</code></td>
+<td>indexado</td>
+</tr>
+<tr>
+<td><code>orden</code></td>
+<td>INTEGER</td>
+<td>≥ 1</td>
+</tr>
+<tr>
+<td><code>nombre</code></td>
+<td>VARCHAR(255)</td>
+<td></td>
+</tr>
+<tr>
+<td><code>descripcion</code></td>
+<td>TEXT</td>
+<td></td>
+</tr>
+<tr>
+<td><code>fecha_inicio</code>, <code>fecha_fin_estimada</code>, <code>fecha_fin_real</code></td>
+<td>DATE</td>
+<td>nullable</td>
+</tr>
+<tr>
+<td><code>horas_estimadas</code>, <code>horas_reales</code></td>
+<td>INTEGER</td>
+<td></td>
+</tr>
+<tr>
+<td><code>estado</code></td>
+<td>VARCHAR(20)</td>
+<td><code>pendiente/en_curso/completada</code></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="58-project_members">5.8 <code>project_members</code></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Columna</th>
+<th>Tipo</th>
+<th>Notas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td>VARCHAR(32) PK</td>
+<td></td>
+</tr>
+<tr>
+<td><code>project_id</code></td>
+<td>VARCHAR(32) FK <code>projects.id</code></td>
+<td>indexado</td>
+</tr>
+<tr>
+<td><code>user_id</code></td>
+<td>VARCHAR(32) FK <code>users.id</code></td>
+<td>indexado; solo usuarios de <code>desarrollo</code></td>
+</tr>
+<tr>
+<td><code>rol_proyecto</code></td>
+<td>VARCHAR(100)</td>
+<td>por ahora siempre <code>Miembro</code></td>
+</tr>
+<tr>
+<td><code>fecha_asignacion</code></td>
+<td>DATETIME</td>
+<td></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="59-progress_updates">5.9 <code>progress_updates</code></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Columna</th>
+<th>Tipo</th>
+<th>Notas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td>VARCHAR(32) PK</td>
+<td></td>
+</tr>
+<tr>
+<td><code>project_id</code></td>
+<td>VARCHAR(32) FK <code>projects.id</code></td>
+<td>indexado</td>
+</tr>
+<tr>
+<td><code>phase_id</code></td>
+<td>VARCHAR(32) FK <code>dev_phases.id</code></td>
+<td>nullable</td>
+</tr>
+<tr>
+<td><code>user_id</code></td>
+<td>VARCHAR(32) FK <code>users.id</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>porcentaje</code></td>
+<td>INTEGER</td>
+<td>0–100</td>
+</tr>
+<tr>
+<td><code>notas</code></td>
+<td>TEXT</td>
+<td>obligatorias</td>
+</tr>
+<tr>
+<td><code>fecha</code></td>
+<td>DATETIME</td>
+<td></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="510-cancellations">5.10 <code>cancellations</code></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Columna</th>
+<th>Tipo</th>
+<th>Notas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td>VARCHAR(32) PK</td>
+<td></td>
+</tr>
+<tr>
+<td><code>project_id</code></td>
+<td>VARCHAR(32) FK <code>projects.id</code></td>
+<td>indexado; 1 por proyecto en la práctica</td>
+</tr>
+<tr>
+<td><code>motivo</code></td>
+<td>VARCHAR(255)</td>
+<td></td>
+</tr>
+<tr>
+<td><code>informe</code></td>
+<td>TEXT</td>
+<td>≥ 30 caracteres</td>
+</tr>
+<tr>
+<td><code>cancelado_por</code></td>
+<td>VARCHAR(32) FK <code>users.id</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>fecha</code></td>
+<td>DATETIME</td>
+<td></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="511-attachments">5.11 <code>attachments</code></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Columna</th>
+<th>Tipo</th>
+<th>Notas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td>VARCHAR(32) PK</td>
+<td></td>
+</tr>
+<tr>
+<td><code>entidad_tipo</code></td>
+<td>VARCHAR(20)</td>
+<td>indexado (<code>proyecto</code>, <code>plan</code>, <code>fase</code>, <code>cancelacion</code>, <code>despacho</code>, <code>incidencia</code>, <code>factura</code>)</td>
+</tr>
+<tr>
+<td><code>entidad_id</code></td>
+<td>VARCHAR(32)</td>
+<td>indexado</td>
+</tr>
+<tr>
+<td><code>nombre</code></td>
+<td>VARCHAR(255)</td>
+<td>nombre original saneado</td>
+</tr>
+<tr>
+<td><code>ruta</code></td>
+<td>VARCHAR(500)</td>
+<td>nombre en disco: <code>&lt;id&gt;_&lt;nombre&gt;</code></td>
+</tr>
+<tr>
+<td><code>mime</code></td>
+<td>VARCHAR(100)</td>
+<td>validado contra lista blanca</td>
+</tr>
+<tr>
+<td><code>tamano</code></td>
+<td>INTEGER</td>
+<td>bytes</td>
+</tr>
+<tr>
+<td><code>subido_por</code></td>
+<td>VARCHAR(32) FK <code>users.id</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>fecha</code></td>
+<td>DATETIME</td>
+<td></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="512-dispatches">5.12 <code>dispatches</code></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Columna</th>
+<th>Tipo</th>
+<th>Notas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td>VARCHAR(32) PK</td>
+<td></td>
+</tr>
+<tr>
+<td><code>project_id</code></td>
+<td>VARCHAR(32) FK <code>projects.id</code></td>
+<td>indexado</td>
+</tr>
+<tr>
+<td><code>fecha_entrega</code></td>
+<td>DATE</td>
+<td>nullable en BD, obligatoria al confirmar</td>
+</tr>
+<tr>
+<td><code>hora_entrega</code></td>
+<td>VARCHAR(10)</td>
+<td>nullable</td>
+</tr>
+<tr>
+<td><code>destinatario</code></td>
+<td>VARCHAR(255)</td>
+<td>nullable en BD</td>
+</tr>
+<tr>
+<td><code>detalle_entregado</code></td>
+<td>TEXT</td>
+<td>nullable en BD</td>
+</tr>
+<tr>
+<td><code>notas</code></td>
+<td>TEXT</td>
+<td>nullable</td>
+</tr>
+<tr>
+<td><code>confirmado_por</code></td>
+<td>VARCHAR(32) FK <code>users.id</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>fecha_registro</code></td>
+<td>DATETIME</td>
+<td></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="513-denials">5.13 <code>denials</code></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Columna</th>
+<th>Tipo</th>
+<th>Notas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td>VARCHAR(32) PK</td>
+<td></td>
+</tr>
+<tr>
+<td><code>project_id</code></td>
+<td>VARCHAR(32) FK <code>projects.id</code></td>
+<td>indexado</td>
+</tr>
+<tr>
+<td><code>motivo</code></td>
+<td>VARCHAR(255)</td>
+<td></td>
+</tr>
+<tr>
+<td><code>detalle</code></td>
+<td>TEXT</td>
+<td>≥ 15 caracteres</td>
+</tr>
+<tr>
+<td><code>registrado_por</code></td>
+<td>VARCHAR(32) FK <code>users.id</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>fecha</code></td>
+<td>DATETIME</td>
+<td></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="514-incidents">5.14 <code>incidents</code></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Columna</th>
+<th>Tipo</th>
+<th>Notas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td>VARCHAR(32) PK</td>
+<td></td>
+</tr>
+<tr>
+<td><code>codigo</code></td>
+<td>VARCHAR(30)</td>
+<td><strong>UNIQUE</strong>, indexado, <code>INC-YYYY-NNNN</code></td>
+</tr>
+<tr>
+<td><code>titulo</code></td>
+<td>VARCHAR(255)</td>
+<td></td>
+</tr>
+<tr>
+<td><code>descripcion</code></td>
+<td>TEXT</td>
+<td>≥ 15 caracteres</td>
+</tr>
+<tr>
+<td><code>equipo_afectado</code></td>
+<td>VARCHAR(255)</td>
+<td></td>
+</tr>
+<tr>
+<td><code>departamento_origen</code></td>
+<td>VARCHAR(20)</td>
+<td>quien reporta</td>
+</tr>
+<tr>
+<td><code>prioridad</code></td>
+<td>VARCHAR(20)</td>
+<td><code>baja/media/alta/critica</code></td>
+</tr>
+<tr>
+<td><code>estado</code></td>
+<td>VARCHAR(20)</td>
+<td>default <code>abierta</code></td>
+</tr>
+<tr>
+<td><code>orden_llegada</code></td>
+<td>INTEGER</td>
+<td>consecutivo global</td>
+</tr>
+<tr>
+<td><code>reportado_por</code></td>
+<td>VARCHAR(32) FK <code>users.id</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>asignado_a</code></td>
+<td>VARCHAR(32) FK <code>users.id</code></td>
+<td><strong>legado</strong>; se migra a <code>incident_assignees</code> y se pone a NULL</td>
+</tr>
+<tr>
+<td><code>created_at</code>, <code>updated_at</code></td>
+<td>DATETIME</td>
+<td></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="515-incident_assignees">5.15 <code>incident_assignees</code></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Columna</th>
+<th>Tipo</th>
+<th>Notas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td>VARCHAR(32) PK</td>
+<td></td>
+</tr>
+<tr>
+<td><code>incident_id</code></td>
+<td>VARCHAR(32) FK <code>incidents.id</code></td>
+<td>indexado</td>
+</tr>
+<tr>
+<td><code>user_id</code></td>
+<td>VARCHAR(32) FK <code>users.id</code></td>
+<td>indexado</td>
+</tr>
+</tbody>
+</table></div>
+<p>Varios técnicos por incidencia; sin UNIQUE <code>(incident_id, user_id)</code> (el dominio
+deduplica antes de guardar).</p>
+<h3 id="516-incident_reports">5.16 <code>incident_reports</code></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Columna</th>
+<th>Tipo</th>
+<th>Notas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td>VARCHAR(32) PK</td>
+<td></td>
+</tr>
+<tr>
+<td><code>incident_id</code></td>
+<td>VARCHAR(32) FK <code>incidents.id</code></td>
+<td>indexado</td>
+</tr>
+<tr>
+<td><code>diagnostico</code></td>
+<td>TEXT</td>
+<td>≥ 10</td>
+</tr>
+<tr>
+<td><code>solucion</code></td>
+<td>TEXT</td>
+<td>≥ 10</td>
+</tr>
+<tr>
+<td><code>tiempo_resolucion_horas</code></td>
+<td>INTEGER</td>
+<td>≥ 0</td>
+</tr>
+<tr>
+<td><code>resuelto_por</code></td>
+<td>VARCHAR(32) FK <code>users.id</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>fecha</code></td>
+<td>DATETIME</td>
+<td></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="517-audit_logs">5.17 <code>audit_logs</code></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Columna</th>
+<th>Tipo</th>
+<th>Notas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td>VARCHAR(32) PK</td>
+<td></td>
+</tr>
+<tr>
+<td><code>user_id</code></td>
+<td>VARCHAR(32)</td>
+<td>nullable, sin FK</td>
+</tr>
+<tr>
+<td><code>user_email</code></td>
+<td>VARCHAR(255)</td>
+<td>nullable</td>
+</tr>
+<tr>
+<td><code>accion</code></td>
+<td>VARCHAR(50)</td>
+<td>indexado, whitelist</td>
+</tr>
+<tr>
+<td><code>entidad_tipo</code></td>
+<td>VARCHAR(30)</td>
+<td>nullable</td>
+</tr>
+<tr>
+<td><code>entidad_id</code></td>
+<td>VARCHAR(32)</td>
+<td>nullable</td>
+</tr>
+<tr>
+<td><code>detalle</code></td>
+<td>TEXT</td>
+<td>nullable</td>
+</tr>
+<tr>
+<td><code>ip</code></td>
+<td>VARCHAR(50)</td>
+<td>nullable; <strong>hoy nunca se rellena</strong></td>
+</tr>
+<tr>
+<td><code>fecha</code></td>
+<td>DATETIME</td>
+<td>indexado</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="6-índices-y-restricciones">6. Índices y restricciones</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Tabla</th>
+<th>Índice / restricción</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>users</code></td>
+<td>PK; email UNIQUE; email, departamento</td>
+</tr>
+<tr>
+<td><code>customers</code></td>
+<td>PK</td>
+</tr>
+<tr>
+<td><code>projects</code></td>
+<td>PK; codigo UNIQUE; codigo; customer_id (FK, sin índice explícito)</td>
+</tr>
+<tr>
+<td><code>payments</code></td>
+<td>PK; project_id</td>
+</tr>
+<tr>
+<td><code>invoices</code></td>
+<td>PK; numero UNIQUE; project_id</td>
+</tr>
+<tr>
+<td><code>dev_plans</code></td>
+<td>PK; project_id</td>
+</tr>
+<tr>
+<td><code>dev_phases</code></td>
+<td>PK; plan_id</td>
+</tr>
+<tr>
+<td><code>project_members</code></td>
+<td>PK; project_id; user_id</td>
+</tr>
+<tr>
+<td><code>progress_updates</code></td>
+<td>PK; project_id; phase_id (FK)</td>
+</tr>
+<tr>
+<td><code>cancellations</code></td>
+<td>PK; project_id</td>
+</tr>
+<tr>
+<td><code>attachments</code></td>
+<td>PK; entidad_tipo; entidad_id</td>
+</tr>
+<tr>
+<td><code>dispatches</code></td>
+<td>PK; project_id</td>
+</tr>
+<tr>
+<td><code>denials</code></td>
+<td>PK; project_id</td>
+</tr>
+<tr>
+<td><code>incidents</code></td>
+<td>PK; codigo UNIQUE; codigo</td>
+</tr>
+<tr>
+<td><code>incident_assignees</code></td>
+<td>PK; incident_id; user_id</td>
+</tr>
+<tr>
+<td><code>incident_reports</code></td>
+<td>PK; incident_id</td>
+</tr>
+<tr>
+<td><code>audit_logs</code></td>
+<td>PK; user_id; accion; fecha</td>
+</tr>
+</tbody>
+</table></div>
+<p>No hay restricciones UNIQUE para: plan por proyecto, entrega por proyecto, negación por
+proyecto. Son reglas de aplicación; una inserción concurrente podría duplicarlas (no
+ocurre en el uso previsto de un solo PC).</p>
+<h2 id="7-migraciones-y-evolución">7. Migraciones y evolución</h2>
+<p>No se usa Alembic. <code>init_db()</code> hace <code>create_all</code> y luego parches idempotentes:</p>
+<pre><code class="language-sql">-- 1) customers.representante (altas nuevas)
+ALTER TABLE customers ADD COLUMN representante VARCHAR(255);   -- solo si falta
+
+-- 2) incidents.asignado_a → incident_assignees
+INSERT INTO incident_assignees (id, incident_id, user_id)
+SELECT lower(hex(randomblob(16))), id, asignado_a FROM incidents
+WHERE asignado_a IS NOT NULL;
+UPDATE incidents SET asignado_a = NULL;
+
+-- 3) proyectos en Despacho con saldo pendiente
+UPDATE projects SET estado_despacho = 'pendiente_cobro'
+WHERE estado_despacho = 'pendiente_entrega'
+  AND estado_desarrollo = 'enviado_despacho'
+  AND monto_total &gt; COALESCE((SELECT SUM(monto) FROM payments
+                              WHERE payments.project_id = projects.id), 0);
+</code></pre>
+<p><strong>Consecuencias:</strong></p>
+<ul>
+<li>Un cambio de esquema debe añadirse a <code>init_db</code> de forma segura para bases existentes.</li>
+<li>No hay historial de versiones ni downgrade.</li>
+<li><code>create_all</code> no añade columnas ni índices a tablas ya creadas.</li>
+<li>Para desarrollo se puede borrar la BD y volver a sembrar.</li>
+</ul>
+<h2 id="8-operación">8. Operación</h2>
+<h3 id="resetear-la-base-borra-todo">Resetear la base (borra todo)</h3>
+<pre><code class="language-bash">cd backend
+rm -f giscar.db giscar.db-wal giscar.db-shm
+uv run python -m app.infrastructure.db.seed
+</code></pre>
+<h3 id="backup-en-caliente">Backup en caliente</h3>
+<p>Con WAL, copiar los tres archivos (<code>giscar.db</code>, <code>-wal</code>, <code>-shm</code>) o, mejor, usar la API de
+backup de SQLite:</p>
+<pre><code class="language-bash">sqlite3 giscar.db &quot;.backup 'giscar-backup.db'&quot;
+</code></pre>
+<p>En la instalación, la ruta es <code>%LOCALAPPDATA%\GCISCAR\giscar.db</code>.</p>
+<h3 id="tamaño-y-rendimiento">Tamaño y rendimiento</h3>
+<ul>
+<li>Un proyecto usa pocas decenas de filas; el volumen esperado (cientos/miles) es trivial.</li>
+<li>Los listados de tablero cargan todos los proyectos y agregan en memoria (dominio puro).
+  Con decenas de miles de proyectos habría que paginar/filtrar en SQL.</li>
+<li>La numeración (<code>PRJ</code>, <code>FAC</code>, <code>INC</code>) se calcula leyendo todos los códigos del año; no es
+  atómica frente a concurrencia.</li>
+</ul>
+<h2 id="9-consultas-de-diagnóstico-útiles">9. Consultas de diagnóstico útiles</h2>
+<pre><code class="language-sql">-- Proyectos por estado
+SELECT estado_ventas, estado_desarrollo, estado_despacho, COUNT(*)
+FROM projects GROUP BY 1,2,3;
+
+-- Saldo por proyecto (centavos)
+SELECT p.codigo, p.monto_total,
+       COALESCE(SUM(pg.monto),0) AS pagado,
+       p.monto_total - COALESCE(SUM(pg.monto),0) AS saldo
+FROM projects p LEFT JOIN payments pg ON pg.project_id = p.id
+GROUP BY p.id;
+
+-- Incidencias activas por prioridad
+SELECT prioridad, COUNT(*) FROM incidents
+WHERE estado NOT IN ('resuelta','cerrada') GROUP BY prioridad;
+
+-- Últimas acciones auditadas
+SELECT fecha, user_email, accion, entidad_tipo, entidad_id, detalle
+FROM audit_logs ORDER BY fecha DESC LIMIT 50;
+</code></pre>
+      </article>
+      <footer class="page-foot">
+      <a class="page-link prev" href="03-frontend.html"><small>Anterior</small><span>← Frontend</span></a>
+      <a class="page-link next" href="05-api-e-integraciones.html"><small>Siguiente</small><span>API e integraciones →</span></a>
+        <p class="source">Documento generado desde
+          <a href="../04-base-de-datos.md">04-base-de-datos.md</a> · 2026-11-10</p>
+      </footer>
+    </main>
+
+    <aside class="toc" aria-label="En esta página"><p class="toc-title">En esta página</p><ul>
+<li><a href="#1-motor-y-configuración">1. Motor y configuración</a></li>
+<li><a href="#2-convenciones">2. Convenciones</a></li>
+<li><a href="#3-diagrama-entidad-relación-núcleo-del-expediente">3. Diagrama entidad-relación — núcleo del expediente</a></li>
+<li><a href="#4-diagrama-soporte-transversal">4. Diagrama — soporte transversal</a></li>
+<li><a href="#5-tablas">5. Tablas</a><ul>
+<li><a href="#51-users">5.1 users</a></li>
+<li><a href="#52-customers">5.2 customers</a></li>
+<li><a href="#53-projects-agregado-central">5.3 projects (agregado central)</a></li>
+<li><a href="#54-payments">5.4 payments</a></li>
+<li><a href="#55-invoices">5.5 invoices</a></li>
+<li><a href="#56-dev_plans">5.6 dev_plans</a></li>
+<li><a href="#57-dev_phases">5.7 dev_phases</a></li>
+<li><a href="#58-project_members">5.8 project_members</a></li>
+<li><a href="#59-progress_updates">5.9 progress_updates</a></li>
+<li><a href="#510-cancellations">5.10 cancellations</a></li>
+<li><a href="#511-attachments">5.11 attachments</a></li>
+<li><a href="#512-dispatches">5.12 dispatches</a></li>
+<li><a href="#513-denials">5.13 denials</a></li>
+<li><a href="#514-incidents">5.14 incidents</a></li>
+<li><a href="#515-incident_assignees">5.15 incident_assignees</a></li>
+<li><a href="#516-incident_reports">5.16 incident_reports</a></li>
+<li><a href="#517-audit_logs">5.17 audit_logs</a></li>
+</ul>
+</li>
+<li><a href="#6-índices-y-restricciones">6. Índices y restricciones</a></li>
+<li><a href="#7-migraciones-y-evolución">7. Migraciones y evolución</a></li>
+<li><a href="#8-operación">8. Operación</a><ul>
+<li><a href="#resetear-la-base-borra-todo">Resetear la base (borra todo)</a></li>
+<li><a href="#backup-en-caliente">Backup en caliente</a></li>
+<li><a href="#tamaño-y-rendimiento">Tamaño y rendimiento</a></li>
+</ul>
+</li>
+<li><a href="#9-consultas-de-diagnóstico-útiles">9. Consultas de diagnóstico útiles</a></li>
+</ul></aside>
+  </div>
+
+  <script defer src="assets/mermaid.min.js"></script>
+  <script defer src="assets/docs.js"></script>
+</body>
+</html>

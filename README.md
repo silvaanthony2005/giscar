@@ -13,7 +13,8 @@ Sistema de información interno para empleados (25–100 usuarios), corriendo en
 > Requisitos originales del cliente: [`readme.md`](readme.md)
 > Decisiones técnicas y convenciones obligatorias: [`AGENTS.md`](AGENTS.md)
 > Documentación técnica (arquitectura, backend, frontend, BD, API, seguridad y flujos):
-> [`docs/`](docs/README.md)
+> [`docs/`](docs/README.md) · versión HTML con navegación y diagramas:
+> [`docs/html/index.html`](docs/html/index.html)
 
 ---
 
